@@ -9,6 +9,7 @@ import {
   Loader2,
   Building2,
   Megaphone,
+  Mail
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import logo from "../assets/logo.png";
@@ -17,8 +18,8 @@ import favlogo from "../assets/favicon.png";
 export default function Sidebar({
   mobileOpen = false,
   visible = true,
-  onCloseMobile = () => {},
-  onNavigate = () => {},
+  onCloseMobile = () => { },
+  onNavigate = () => { },
 }) {
   const [logoutLoading, setLogoutLoading] = useState(false);
 
@@ -71,22 +72,20 @@ export default function Sidebar({
             <img
               src={logo}
               alt="SaraS Logo"
-              className={`absolute transition-all duration-300 ${
-                visible
-                  ? "opacity-100 scale-100 h-16"
-                  : "opacity-0 scale-75 h-16 pointer-events-none"
-              }`}
+              className={`absolute transition-all duration-300 ${visible
+                ? "opacity-100 scale-100 h-16"
+                : "opacity-0 scale-75 h-16 pointer-events-none"
+                }`}
             />
 
             {/* Favicon */}
             <img
               src={favlogo}
               alt="SaraS Icon"
-              className={`absolute transition-all duration-300 ${
-                visible
-                  ? "opacity-0 scale-75 w-10 h-10 pointer-events-none"
-                  : "opacity-100 scale-100 w-10 h-10 rounded-full border border-slate-200"
-              }`}
+              className={`absolute transition-all duration-300 ${visible
+                ? "opacity-0 scale-75 w-10 h-10 pointer-events-none"
+                : "opacity-100 scale-100 w-10 h-10 rounded-full border border-slate-200"
+                }`}
             />
           </div>
         </div>
@@ -148,6 +147,51 @@ export default function Sidebar({
                 collapsed={!visible}
                 onClick={onNavigate}
               />
+              <MenuLink
+                to="/campaigns"
+                active={active("/campaigns")}
+                icon={<Mail size={20} />}
+                text="Campaigns"
+                collapsed={!visible}
+                onClick={onNavigate}
+              />
+            </>
+          ) : user?.role === "MANAGER" ? (
+            <>
+              <MenuLink
+                to="/employee"
+                active={active("/employee")}
+                icon={<LayoutDashboard size={20} />}
+                text="Dashboard"
+                collapsed={!visible}
+                onClick={onNavigate}
+              />
+
+              <MenuLink
+                to="/my-tasks"
+                active={active("/my-tasks")}
+                icon={<ClipboardList size={20} />}
+                text="My Tasks"
+                collapsed={!visible}
+                onClick={onNavigate}
+              />
+
+              <MenuLink
+                to="/add-task"
+                active={active("/add-task")}
+                icon={<PlusCircle size={20} />}
+                text="Add Task"
+                collapsed={!visible}
+                onClick={onNavigate}
+              />
+              <MenuLink
+                to="/campaigns"
+                active={active("/campaigns")}
+                icon={<Mail size={20} />}
+                text="Campaigns"
+                collapsed={!visible}
+                onClick={onNavigate}
+              />
             </>
           ) : (
             <>
@@ -196,10 +240,9 @@ export default function Sidebar({
             onClick={logout}
             disabled={logoutLoading}
             className={`w-full flex items-center justify-center gap-2 rounded-xl py-3 font-medium transition
-              ${
-                visible
-                  ? "bg-red-50 text-red-600 hover:bg-red-100"
-                  : "text-red-600 hover:bg-red-50"
+              ${visible
+                ? "bg-red-50 text-red-600 hover:bg-red-100"
+                : "text-red-600 hover:bg-red-50"
               }
               ${logoutLoading ? "opacity-70 cursor-not-allowed" : ""}
               `}
@@ -234,10 +277,9 @@ function MenuLink({ to, icon, text, active, onClick, collapsed }) {
         px-4 py-3 mb-2
         rounded-xl
         transition-all
-        ${
-          active
-            ? "bg-[#2b1247] text-white shadow-sm"
-            : "text-slate-600 hover:bg-slate-100"
+        ${active
+          ? "bg-[#2b1247] text-white shadow-sm"
+          : "text-slate-600 hover:bg-slate-100"
         }
       `}
     >

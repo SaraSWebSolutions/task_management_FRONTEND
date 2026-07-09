@@ -22,6 +22,9 @@ import EditEmployee from "../pages/EditEmployee";
 import Clients from "../pages/Clients";
 import AddClient from "../pages/AddClient";
 import EditClient from "../pages/EditClient";
+import Campaigns from "../pages/Campaign";
+import AddCampaign from "../pages/AddCampaign";
+import ViewCampaign from "../pages/ViewCampaign";
 
 import Leads from "../pages/Leads";
 import AddLead from "../pages/AddLead";
@@ -126,6 +129,33 @@ const AppRoutes = () => {
           <AdminRoute>
             <Clients />
           </AdminRoute>
+        }
+      />
+
+      <Route
+        path="/campaigns"
+        element={
+          <ProtectedRoute>
+            <Campaigns />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/campaigns/add"
+        element={
+          <ProtectedRoute>
+            <AddCampaign />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/campaigns/:id"
+        element={
+          <ProtectedRoute>
+            <ViewCampaign />
+          </ProtectedRoute>
         }
       />
 

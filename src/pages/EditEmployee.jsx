@@ -247,6 +247,7 @@ export default function EditEmployee() {
                   className={inputClass}
                 >
                   <option value="EMPLOYEE">Employee</option>
+                  <option value="MANAGER">Manager</option>
                   <option value="ADMIN">Admin</option>
                 </select>
               </Field>

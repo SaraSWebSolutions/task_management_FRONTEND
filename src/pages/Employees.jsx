@@ -251,6 +251,8 @@ export default function Employees() {
                         className={`px-3 py-1 rounded-full text-xs font-semibold ${
                           emp.role === "ADMIN"
                             ? "bg-purple-100 text-purple-700"
+                            : emp.role === "MANAGER"
+                            ? "bg-green-100 text-green-700"
                             : "bg-blue-100 text-blue-700"
                         }`}
                       >
