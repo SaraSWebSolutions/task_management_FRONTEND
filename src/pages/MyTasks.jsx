@@ -107,7 +107,7 @@ export default function MyTasks() {
           <div className="text-center">
             <Loader2
               size={50}
-              className="animate-spin text-[var(--brand)] mx-auto mb-4"
+              className="animate-spin text-(--brand) mx-auto mb-4"
             />
 
             <p className="text-slate-600 font-medium text-lg">
@@ -121,13 +121,13 @@ export default function MyTasks() {
 
   return (
     <Layout>
-      <div className="space-y-8 max-w-[1600px] mx-auto">
+      <div className="space-y-8 max-w-400 mx-auto">
         {/* Top Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-white rounded-3xl p-3 shadow-sm border">
             <p className="text-slate-500">Total Tasks</p>
 
-            <h2 className="text-5xl font-bold text-[var(--brand)] mt-4">
+            <h2 className="text-5xl font-bold text-(--brand) mt-4">
               {tasks.length}
             </h2>
           </div>
@@ -163,7 +163,7 @@ export default function MyTasks() {
                 placeholder="Search tasks..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border rounded-xl outline-none focus:border-[var(--brand)]"
+                className="w-full pl-10 pr-4 py-3 border rounded-xl outline-none focus:border-(--brand)"
               />
             </div>
 
@@ -199,7 +199,7 @@ export default function MyTasks() {
                   }, 300);
                 }}
                 disabled={addTaskLoading}
-                className="bg-[var(--brand)] text-white px-3 py-2 sm:px-5 sm:py-3 rounded-xl flex items-center gap-2 disabled:opacity-70"
+                className="bg-(--brand) text-white px-3 py-2 sm:px-5 sm:py-3 rounded-xl flex items-center gap-2 disabled:opacity-70"
               >
                 {addTaskLoading ? (
                   <>
@@ -226,7 +226,7 @@ export default function MyTasks() {
 
           <div className="overflow-x-auto">
             {/* <table className="w-full"> */}
-            <table className="min-w-[1200px] w-full ">
+            <table className="min-w-300 w-full ">
               <thead>
                 <tr className="bg-slate-50">
                   <th className="px-6 py-4 whitespace-nowrap">Time</th>

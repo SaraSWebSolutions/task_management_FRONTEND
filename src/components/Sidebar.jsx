@@ -60,7 +60,7 @@ export default function Sidebar({
           bg-white border-r border-slate-200 shadow-lg
           flex flex-col
           transition-all duration-300
-          w-[85vw] max-w-[300px]
+          w-[85vw] max-w-75
           ${desktopWidth}
           lg:translate-x-0
           ${mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}

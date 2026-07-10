@@ -178,7 +178,7 @@ export default function Employees() {
 
               <Users
                 size={34}
-                className="text-[#2b1247] bg-green-100 text-green-700"
+                className="text-green-700 bg-green-100"
               />
             </div>
           </div>
@@ -209,7 +209,7 @@ export default function Employees() {
           {/* <div className="overflow-x-auto"> */}
           <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
             {/* <table className="w-full"> */}
-            <table className="min-w-[1200px] w-full">
+            <table className="min-w-300 w-full">
               <thead>
                 <tr className="bg-slate-100">
                   <th className="p-4 text-sm font-semibold">Employee ID</th>
