@@ -4,6 +4,7 @@ import Layout from "../components/Layout";
 import api from "../api/axios";
 import toast from "react-hot-toast";
 import { ArrowLeft, Save } from "lucide-react";
+import * as XLSX from "xlsx";
 
 export default function AddCampaign() {
   const navigate = useNavigate();
@@ -45,6 +46,47 @@ export default function AddCampaign() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleExcelUpload = (e) => {
+    const file = e.target.files[0];
+
+    if (!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = (event) => {
+      const data = new Uint8Array(event.target.result);
+
+      const workbook = XLSX.read(data, {
+        type: "array",
+      });
+
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+
+      const json = XLSX.utils.sheet_to_json(sheet);
+
+      const emails = [
+        ...new Set(
+          json
+            .map((row) => row.Email)
+            .filter(
+              (email) =>
+                typeof email === "string" &&
+                email.trim() !== ""
+            )
+        ),
+      ];
+
+      setFormData((prev) => ({
+        ...prev,
+        emails: emails.join(", "),
+      }));
+
+      toast.success(`${emails.length} emails imported`);
+    };
+
+    reader.readAsArrayBuffer(file);
   };
 
   return (
@@ -110,15 +152,31 @@ export default function AddCampaign() {
                 <label className="block text-sm font-medium text-slate-700 mb-2">
                   Recipient Emails
                 </label>
+
                 <textarea
                   value={formData.emails}
                   onChange={updateField("emails")}
-                  rows={4}
+                  rows={5}
                   placeholder="Enter emails separated by comma"
                   className="w-full border border-slate-300 rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#2b1247]"
                 />
+
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Or Upload Excel (.xlsx)
+                  </label>
+
+                  <input
+                    type="file"
+                    accept=".xlsx,.xls"
+                    onChange={handleExcelUpload}
+                    className="block w-full border border-slate-300 rounded-xl px-3 py-2"
+                  />
+                </div>
+
                 <p className="text-xs text-slate-500 mt-2">
-                  Separate each recipient email with a comma.
+                  Emails will be extracted from the <strong>Email</strong> column and
+                  automatically filled above.
                 </p>
               </div>
             </div>
