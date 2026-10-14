@@ -1,9 +1,21 @@
-import React from 'react'
+import Layout from "../components/Layout";
+import LeadForm from "../components/LeadForm";
+import api from "../api/axios";
+import toast from "react-hot-toast";
 
-const AddLead = () => {
+export default function AddLead() {
+  const create = async (data) => {
+    await api.post("/leads", data);
+    toast.success("Lead created successfully");
+  };
+
   return (
-    <div>AddLead</div>
-  )
+    <Layout>
+      <LeadForm
+        title="Add Lead"
+        subtitle="Someone replied or contacted the team? Add them here."
+        onSubmit={create}
+      />
+    </Layout>
+  );
 }
-
-export default AddLead

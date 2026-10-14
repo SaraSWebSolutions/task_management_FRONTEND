@@ -9,7 +9,8 @@ import {
   Loader2,
   Building2,
   Megaphone,
-  Mail
+  Mail,
+  FolderKanban,
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import logo from "../assets/logo.png";
@@ -144,6 +145,33 @@ export default function Sidebar({
                 active={active("/leads")}
                 icon={<Megaphone size={20} />}
                 text="Leads"
+                collapsed={!visible}
+                onClick={onNavigate}
+              />
+
+              <MenuLink
+                to="/projects"
+                active={active("/projects")}
+                icon={<FolderKanban size={20} />}
+                text="Projects"
+                collapsed={!visible}
+                onClick={onNavigate}
+              />
+
+              <MenuLink
+                to="/reports"
+                active={active("/projects")}
+                icon={<FolderKanban size={20} />}
+                text="Reports"
+                collapsed={!visible}
+                onClick={onNavigate}
+              />
+
+              <MenuLink
+                to="/target-dashboard"
+                active={active("/projects")}
+                icon={<FolderKanban size={20} />}
+                text="Target Dashboard"
                 collapsed={!visible}
                 onClick={onNavigate}
               />

@@ -30,14 +30,18 @@ import Leads from "../pages/Leads";
 import AddLead from "../pages/AddLead";
 import EditLead from "../pages/EditLead";
 
+import LeadDetails from "../pages/LeadDetails";
+import Projects from "../pages/Projects";
+import ProjectDetails from "../pages/ProjectDetails";
+import Reports from "../pages/Reports";
+import ReportDashboard from "../pages/ReportDashboard";
+
 const AppRoutes = () => {
   return (
     <Routes>
       {/* Login */}
       <Route path="/" element={<Login />} />
-
       {/* Protected Routes */}
-
       <Route
         path="/profile"
         element={
@@ -46,9 +50,7 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
-
       {/* Employee */}
-
       <Route
         path="/employee"
         element={
@@ -57,7 +59,6 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
-
       <Route
         path="/my-tasks"
         element={
@@ -66,7 +67,6 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
-
       <Route
         path="/add-task"
         element={
@@ -75,9 +75,7 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
-
       {/* Admin */}
-
       <Route
         path="/admin"
         element={
@@ -86,7 +84,6 @@ const AppRoutes = () => {
           </AdminRoute>
         }
       />
-
       <Route
         path="/all-tasks"
         element={
@@ -95,7 +92,6 @@ const AppRoutes = () => {
           </AdminRoute>
         }
       />
-
       <Route
         path="/employees"
         element={
@@ -104,7 +100,6 @@ const AppRoutes = () => {
           </AdminRoute>
         }
       />
-
       <Route
         path="/add-employee"
         element={
@@ -113,7 +108,6 @@ const AppRoutes = () => {
           </AdminRoute>
         }
       />
-
       <Route
         path="/edit-employee/:id"
         element={
@@ -122,7 +116,6 @@ const AppRoutes = () => {
           </AdminRoute>
         }
       />
-
       <Route
         path="/clients"
         element={
@@ -131,7 +124,6 @@ const AppRoutes = () => {
           </AdminRoute>
         }
       />
-
       <Route
         path="/campaigns"
         element={
@@ -140,7 +132,6 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
-
       <Route
         path="/campaigns/add"
         element={
@@ -149,7 +140,6 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
-
       <Route
         path="/campaigns/:id"
         element={
@@ -158,7 +148,6 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
-
       <Route
         path="/add-client"
         element={
@@ -167,7 +156,6 @@ const AppRoutes = () => {
           </AdminRoute>
         }
       />
-
       <Route
         path="/edit-client/:id"
         element={
@@ -176,7 +164,6 @@ const AppRoutes = () => {
           </AdminRoute>
         }
       />
-
       <Route
         path="/leads"
         element={
@@ -185,7 +172,6 @@ const AppRoutes = () => {
           </AdminRoute>
         }
       />
-
       <Route
         path="/add-lead"
         element={
@@ -194,7 +180,6 @@ const AppRoutes = () => {
           </AdminRoute>
         }
       />
-
       <Route
         path="/edit-lead/:id"
         element={
@@ -204,8 +189,47 @@ const AppRoutes = () => {
         }
       />
 
+      <Route
+        path="/leads/:id"
+        element={
+          <AdminRoute>
+            <LeadDetails />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/projects"
+        element={
+          <AdminRoute>
+            <Projects />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/projects/:id"
+        element={
+          <AdminRoute>
+            <ProjectDetails />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/reports"
+        element={
+          <AdminRoute>
+            <Reports />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/target-dashboard"
+        element={
+          <AdminRoute>
+            <ReportDashboard />
+          </AdminRoute>
+        }
+      />
       {/* Common */}
-
       <Route
         path="/task/:id"
         element={
@@ -214,7 +238,6 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
-
       <Route
         path="/assign-task"
         element={
@@ -223,7 +246,6 @@ const AppRoutes = () => {
           </AdminRoute>
         }
       />
-
       <Route
         path="/edit-task/:id"
         element={
