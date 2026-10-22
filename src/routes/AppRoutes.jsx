@@ -1,23 +1,16 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 
 import ProtectedRoute from "../components/ProtectedRoute";
 import AdminRoute from "./AdminRoutes";
+import PermissionRoute from "../components/PermissionRoute";
 
 import Login from "../pages/Login";
 import Profile from "../pages/Profile";
+import MyWork from "../pages/MyWork";
 
-import EmployeeDashboard from "../pages/EmployeeDashboard";
 import AdminDashboard from "../pages/AdminDashboard";
 
-import MyTasks from "../pages/MyTasks";
-import AddTask from "../pages/AddTask";
-import AllTasks from "../pages/AllTasks";
 import TaskDetails from "../pages/TaskDetails";
-import AssignTask from "../pages/AssignTask";
-import EditTask from "../pages/EditTask";
-import AddEmployee from "../pages/AddEmployee";
-import Employees from "../pages/Employees";
-import EditEmployee from "../pages/EditEmployee";
 
 import Clients from "../pages/Clients";
 import AddClient from "../pages/AddClient";
@@ -33,8 +26,39 @@ import EditLead from "../pages/EditLead";
 import LeadDetails from "../pages/LeadDetails";
 import Projects from "../pages/Projects";
 import ProjectDetails from "../pages/ProjectDetails";
+import ProjectDashboard from "../pages/ProjectDashboard";
+import ProjectTaskBoard from "../pages/ProjectTaskBoard";
+import ProjectTaskList from "../pages/ProjectTaskList";
+import Milestones from "../pages/Milestones";
+import TimeTracking from "../pages/TimeTracking";
 import Reports from "../pages/Reports";
 import ReportDashboard from "../pages/ReportDashboard";
+import Users from "../pages/Users";
+import UserForm from "../pages/UserForm";
+import UserProfile from "../pages/UserProfile";
+import Roles from "../pages/Roles";
+import CrmDashboard from "../pages/CrmDashboard";
+import LeadPipeline from "../pages/LeadPipeline";
+import Customers from "../pages/Customers";
+import Deals from "../pages/Deals";
+import CrmTasks from "../pages/CrmTasks";
+import FollowUps from "../pages/FollowUps";
+import FinanceRevenue from "../pages/FinanceRevenue";
+import FinanceExpenses from "../pages/FinanceExpenses";
+import FinanceInvoices from "../pages/FinanceInvoices";
+import FinancePayments from "../pages/FinancePayments";
+import FinanceSubscriptions from "../pages/FinanceSubscriptions";
+import FinancePlans from "../pages/FinancePlans";
+import FinanceTax from "../pages/FinanceTax";
+import FinanceReports from "../pages/FinanceReports";
+import AnalyticsSales from "../pages/AnalyticsSales";
+import AnalyticsRevenue from "../pages/AnalyticsRevenue";
+import AnalyticsUsers from "../pages/AnalyticsUsers";
+import AnalyticsPerformance from "../pages/AnalyticsPerformance";
+import AnalyticsLeadSources from "../pages/AnalyticsLeadSources";
+import AnalyticsConversion from "../pages/AnalyticsConversion";
+import AnalyticsCustom from "../pages/AnalyticsCustom";
+import AnalyticsExport from "../pages/AnalyticsExport";
 
 const AppRoutes = () => {
   return (
@@ -51,30 +75,26 @@ const AppRoutes = () => {
         }
       />
       {/* Employee */}
+      {/* My Work replaces the old employee dashboard, My Tasks, Add Task and Edit Task */}
       <Route
-        path="/employee"
+        path="/my-work"
         element={
           <ProtectedRoute>
-            <EmployeeDashboard />
+            <MyWork />
           </ProtectedRoute>
         }
       />
-      <Route
-        path="/my-tasks"
-        element={
-          <ProtectedRoute>
-            <MyTasks />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/add-task"
-        element={
-          <ProtectedRoute>
-            <AddTask />
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/employee" element={<Navigate to="/my-work" replace />} />
+      <Route path="/my-tasks" element={<Navigate to="/my-work" replace />} />
+      <Route path="/add-task" element={<Navigate to="/my-work" replace />} />
+      <Route path="/edit-task/:id" element={<Navigate to="/my-work" replace />} />
+      {/* Managers assign and review work on the project task list */}
+      <Route path="/assign-task" element={<Navigate to="/pm/tasks" replace />} />
+      <Route path="/all-tasks" element={<Navigate to="/pm/tasks" replace />} />
+      {/* Employees are managed in User Management */}
+      <Route path="/employees" element={<Navigate to="/users" replace />} />
+      <Route path="/add-employee" element={<Navigate to="/users/add" replace />} />
+      <Route path="/edit-employee/:id" element={<Navigate to="/users" replace />} />
       {/* Admin */}
       <Route
         path="/admin"
@@ -85,43 +105,99 @@ const AppRoutes = () => {
         }
       />
       <Route
-        path="/all-tasks"
+        path="/users"
         element={
-          <AdminRoute>
-            <AllTasks />
-          </AdminRoute>
+          <PermissionRoute perm="users.view">
+            <Users />
+          </PermissionRoute>
         }
       />
       <Route
-        path="/employees"
+        path="/users/add"
         element={
-          <AdminRoute>
-            <Employees />
-          </AdminRoute>
+          <PermissionRoute perm="users.create">
+            <UserForm />
+          </PermissionRoute>
         }
       />
       <Route
-        path="/add-employee"
+        path="/users/:id/edit"
         element={
-          <AdminRoute>
-            <AddEmployee />
-          </AdminRoute>
+          <PermissionRoute perm="users.edit">
+            <UserForm />
+          </PermissionRoute>
         }
       />
       <Route
-        path="/edit-employee/:id"
+        path="/users/:id"
         element={
-          <AdminRoute>
-            <EditEmployee />
-          </AdminRoute>
+          <PermissionRoute perm="users.view">
+            <UserProfile />
+          </PermissionRoute>
+        }
+      />
+      <Route
+        path="/roles"
+        element={
+          <PermissionRoute perm={["roles.view", "roles.manage"]}>
+            <Roles />
+          </PermissionRoute>
+        }
+      />
+      <Route
+        path="/crm-dashboard"
+        element={
+          <PermissionRoute perm="leads.view">
+            <CrmDashboard />
+          </PermissionRoute>
+        }
+      />
+      <Route
+        path="/crm/pipeline"
+        element={
+          <PermissionRoute perm="leads.view">
+            <LeadPipeline />
+          </PermissionRoute>
+        }
+      />
+      <Route
+        path="/crm/customers"
+        element={
+          <PermissionRoute perm="clients.view">
+            <Customers />
+          </PermissionRoute>
+        }
+      />
+      <Route
+        path="/crm/deals"
+        element={
+          <PermissionRoute perm="deals.view">
+            <Deals />
+          </PermissionRoute>
+        }
+      />
+      <Route
+        path="/crm/tasks"
+        element={
+          <PermissionRoute perm="crmtasks.view">
+            <CrmTasks />
+          </PermissionRoute>
+        }
+      />
+      <Route
+        path="/crm/follow-ups"
+        element={
+          <PermissionRoute perm="followups.view">
+            <FollowUps />
+          </PermissionRoute>
         }
       />
       <Route
         path="/clients"
         element={
-          <AdminRoute>
+          <PermissionRoute perm="clients.view">
             <Clients />
-          </AdminRoute>
+          </PermissionRoute>
         }
       />
       <Route
@@ -151,82 +227,250 @@ const AppRoutes = () => {
       <Route
         path="/add-client"
         element={
-          <AdminRoute>
+          <PermissionRoute perm="clients.manage">
             <AddClient />
-          </AdminRoute>
+          </PermissionRoute>
         }
       />
       <Route
         path="/edit-client/:id"
         element={
-          <AdminRoute>
+          <PermissionRoute perm="clients.manage">
             <EditClient />
-          </AdminRoute>
+          </PermissionRoute>
         }
       />
       <Route
         path="/leads"
         element={
-          <AdminRoute>
+          <PermissionRoute perm="leads.view">
             <Leads />
-          </AdminRoute>
+          </PermissionRoute>
         }
       />
       <Route
         path="/add-lead"
         element={
-          <AdminRoute>
+          <PermissionRoute perm="leads.manage">
             <AddLead />
-          </AdminRoute>
+          </PermissionRoute>
         }
       />
       <Route
         path="/edit-lead/:id"
         element={
-          <AdminRoute>
+          <PermissionRoute perm="leads.manage">
             <EditLead />
-          </AdminRoute>
+          </PermissionRoute>
         }
       />
 
       <Route
         path="/leads/:id"
         element={
-          <AdminRoute>
+          <PermissionRoute perm="leads.view">
             <LeadDetails />
-          </AdminRoute>
+          </PermissionRoute>
         }
       />
       <Route
         path="/projects"
         element={
-          <AdminRoute>
+          <PermissionRoute perm="projects.view">
             <Projects />
-          </AdminRoute>
+          </PermissionRoute>
         }
       />
       <Route
         path="/projects/:id"
         element={
-          <AdminRoute>
+          <PermissionRoute perm="projects.view">
             <ProjectDetails />
-          </AdminRoute>
+          </PermissionRoute>
+        }
+      />
+      <Route
+        path="/pm/dashboard"
+        element={
+          <PermissionRoute perm={["projects.view", "projecttasks.view"]}>
+            <ProjectDashboard />
+          </PermissionRoute>
+        }
+      />
+      <Route
+        path="/pm/board"
+        element={
+          <PermissionRoute perm="projecttasks.view">
+            <ProjectTaskBoard />
+          </PermissionRoute>
+        }
+      />
+      <Route
+        path="/pm/tasks"
+        element={
+          <PermissionRoute perm="projecttasks.view">
+            <ProjectTaskList />
+          </PermissionRoute>
+        }
+      />
+      <Route
+        path="/pm/milestones"
+        element={
+          <PermissionRoute perm="milestones.view">
+            <Milestones />
+          </PermissionRoute>
+        }
+      />
+      <Route
+        path="/pm/time"
+        element={
+          <PermissionRoute perm="timelogs.view">
+            <TimeTracking />
+          </PermissionRoute>
         }
       />
       <Route
         path="/reports"
         element={
-          <AdminRoute>
+          <PermissionRoute perm="reports.view">
             <Reports />
-          </AdminRoute>
+          </PermissionRoute>
         }
       />
       <Route
         path="/target-dashboard"
         element={
-          <AdminRoute>
+          <PermissionRoute perm="reports.view">
             <ReportDashboard />
-          </AdminRoute>
+          </PermissionRoute>
+        }
+      />
+      <Route
+        path="/finance/revenue"
+        element={
+          <PermissionRoute perm="finance.view">
+            <FinanceRevenue />
+          </PermissionRoute>
+        }
+      />
+      <Route
+        path="/finance/expenses"
+        element={
+          <PermissionRoute perm="expenses.view">
+            <FinanceExpenses />
+          </PermissionRoute>
+        }
+      />
+      <Route
+        path="/finance/invoices"
+        element={
+          <PermissionRoute perm="invoices.view">
+            <FinanceInvoices />
+          </PermissionRoute>
+        }
+      />
+      <Route
+        path="/finance/payments"
+        element={
+          <PermissionRoute perm="payments.view">
+            <FinancePayments />
+          </PermissionRoute>
+        }
+      />
+      <Route
+        path="/finance/subscriptions"
+        element={
+          <PermissionRoute perm="subscriptions.view">
+            <FinanceSubscriptions />
+          </PermissionRoute>
+        }
+      />
+      <Route
+        path="/finance/plans"
+        element={
+          <PermissionRoute perm="plans.view">
+            <FinancePlans />
+          </PermissionRoute>
+        }
+      />
+      <Route
+        path="/finance/tax"
+        element={
+          <PermissionRoute perm="tax.view">
+            <FinanceTax />
+          </PermissionRoute>
+        }
+      />
+      <Route
+        path="/finance/reports"
+        element={
+          <PermissionRoute perm="finance.view">
+            <FinanceReports />
+          </PermissionRoute>
+        }
+      />
+      <Route
+        path="/analytics/sales"
+        element={
+          <PermissionRoute perm="analytics.view">
+            <AnalyticsSales />
+          </PermissionRoute>
+        }
+      />
+      <Route
+        path="/analytics/revenue"
+        element={
+          <PermissionRoute perm="analytics.view">
+            <AnalyticsRevenue />
+          </PermissionRoute>
+        }
+      />
+      <Route
+        path="/analytics/users"
+        element={
+          <PermissionRoute perm="analytics.view">
+            <AnalyticsUsers />
+          </PermissionRoute>
+        }
+      />
+      <Route
+        path="/analytics/performance"
+        element={
+          <PermissionRoute perm="analytics.view">
+            <AnalyticsPerformance />
+          </PermissionRoute>
+        }
+      />
+      <Route
+        path="/analytics/lead-sources"
+        element={
+          <PermissionRoute perm="analytics.view">
+            <AnalyticsLeadSources />
+          </PermissionRoute>
+        }
+      />
+      <Route
+        path="/analytics/conversion"
+        element={
+          <PermissionRoute perm="analytics.view">
+            <AnalyticsConversion />
+          </PermissionRoute>
+        }
+      />
+      <Route
+        path="/analytics/custom"
+        element={
+          <PermissionRoute perm="analytics.view">
+            <AnalyticsCustom />
+          </PermissionRoute>
+        }
+      />
+      <Route
+        path="/analytics/export"
+        element={
+          <PermissionRoute perm="analytics.export">
+            <AnalyticsExport />
+          </PermissionRoute>
         }
       />
       {/* Common */}
@@ -235,22 +479,6 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <TaskDetails />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/assign-task"
-        element={
-          <AdminRoute>
-            <AssignTask />
-          </AdminRoute>
-        }
-      />
-      <Route
-        path="/edit-task/:id"
-        element={
-          <ProtectedRoute>
-            <EditTask />
           </ProtectedRoute>
         }
       />

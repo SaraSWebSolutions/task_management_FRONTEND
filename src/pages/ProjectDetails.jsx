@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 import Layout from "../components/Layout";
 import api from "../api/axios";
 import toast from "react-hot-toast";
 import { money } from "./Projects";
+import { milestoneStatusMeta } from "../constants/pm";
+import { fmtDate, toDateInput } from "../utils/format";
+import { can } from "../utils/permissions";
 
 const input =
   "w-full border border-slate-300 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-[#2b1247]";
@@ -140,6 +143,7 @@ export default function ProjectDetails() {
   const [team, setTeam] = useState([]);
   const [support, setSupport] = useState([]);
   const [saving, setSaving] = useState(false);
+  const [overview, setOverview] = useState(null);
 
   const load = async () => {
     try {
@@ -152,6 +156,11 @@ export default function ProjectDetails() {
       setUsers(u.data.users || []);
       setForm({
         name: pr.name,
+        clientName: pr.clientName || "",
+        description: pr.description || "",
+        priority: pr.priority || "MEDIUM",
+        startDate: toDateInput(pr.startDate),
+        endDate: toDateInput(pr.endDate),
         status: pr.status,
         projectValue: pr.projectValue,
         clientEstimationHours: pr.clientEstimationHours,
@@ -159,6 +168,10 @@ export default function ProjectDetails() {
       });
       setTeam(toRows(pr.team));
       setSupport(toRows(pr.support));
+      api
+        .get(`/pm/projects/${id}/overview`)
+        .then((r) => setOverview(r.data))
+        .catch(() => setOverview(null));
     } catch {
       toast.error("Failed to load project");
     }
@@ -220,6 +233,60 @@ export default function ProjectDetails() {
           </div>
         </div>
 
+        {/* Progress overview (tasks, hours, milestones) */}
+        {overview && (
+          <div className="bg-white rounded-3xl border shadow-sm p-6 space-y-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-xl font-semibold text-slate-800">Overview</h2>
+              <div className="flex gap-2 text-sm">
+                {can("projecttasks.view") && <Link to="/pm/board" className="rounded-xl border border-slate-300 px-3 py-1.5 hover:bg-slate-100">Task board</Link>}
+                {can("milestones.view") && <Link to="/pm/milestones" className="rounded-xl border border-slate-300 px-3 py-1.5 hover:bg-slate-100">Milestones</Link>}
+                {can("timelogs.view") && <Link to="/pm/time" className="rounded-xl border border-slate-300 px-3 py-1.5 hover:bg-slate-100">Time tracking</Link>}
+              </div>
+            </div>
+
+            <div className="grid sm:grid-cols-3 gap-4 text-center">
+              <div className="rounded-2xl bg-slate-50 p-4">
+                <p className="text-sm text-slate-500">Progress</p>
+                <p className="text-3xl font-bold text-slate-800">{project.progress}%</p>
+              </div>
+              <div className="rounded-2xl bg-slate-50 p-4">
+                <p className="text-sm text-slate-500">Tasks done</p>
+                <p className="text-3xl font-bold text-slate-800">{overview.tasks.done}/{overview.tasks.total}</p>
+              </div>
+              <div className="rounded-2xl bg-slate-50 p-4">
+                <p className="text-sm text-slate-500">Hours logged</p>
+                <p className="text-3xl font-bold text-slate-800">{Math.round(overview.loggedHours * 10) / 10}h</p>
+              </div>
+            </div>
+
+            <div>
+              <p className="font-medium text-slate-700 mb-3">Milestone progress</p>
+              {overview.milestones.length === 0 ? (
+                <p className="text-sm text-slate-500">No milestones yet.</p>
+              ) : (
+                <div className="space-y-4">
+                  {overview.milestones.map((m) => (
+                    <div key={m._id}>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="font-medium text-slate-800">
+                          {m.title}{" "}
+                          <span className={`ml-2 rounded-md px-2 py-0.5 text-xs ${milestoneStatusMeta(m.status).badge}`}>{milestoneStatusMeta(m.status).label}</span>
+                        </span>
+                        <span className="text-slate-500">{fmtDate(m.dueDate)}</span>
+                      </div>
+                      <div className="mt-1.5 h-2 rounded-full bg-slate-100">
+                        <div className="h-2 rounded-full" style={{ width: `${m.progress}%`, background: milestoneStatusMeta(m.status).bar }} />
+                      </div>
+                      <p className="mt-1 text-xs text-slate-400">{m.progress}% complete</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Details */}
         <div className="bg-white rounded-3xl border shadow-sm p-6 space-y-4">
           <h2 className="text-xl font-semibold text-slate-800">Project details</h2>
@@ -233,8 +300,33 @@ export default function ProjectDetails() {
               <select value={form.status} onChange={set("status")} className={`${input} mt-2`}>
                 <option value="PLANNING">Planning</option>
                 <option value="IN_PROGRESS">In progress</option>
+                <option value="ON_HOLD">On hold</option>
                 <option value="COMPLETED">Completed</option>
               </select>
+            </label>
+            <label className="text-sm font-medium text-slate-700">
+              Client name
+              <input value={form.clientName} onChange={set("clientName")} className={`${input} mt-2`} />
+            </label>
+            <label className="text-sm font-medium text-slate-700">
+              Priority
+              <select value={form.priority} onChange={set("priority")} className={`${input} mt-2`}>
+                <option value="HIGH">High</option>
+                <option value="MEDIUM">Medium</option>
+                <option value="LOW">Low</option>
+              </select>
+            </label>
+            <label className="text-sm font-medium text-slate-700">
+              Start date
+              <input type="date" value={form.startDate} onChange={set("startDate")} className={`${input} mt-2`} />
+            </label>
+            <label className="text-sm font-medium text-slate-700">
+              End date
+              <input type="date" value={form.endDate} onChange={set("endDate")} className={`${input} mt-2`} />
+            </label>
+            <label className="text-sm font-medium text-slate-700 md:col-span-2">
+              Description
+              <textarea rows={3} value={form.description} onChange={set("description")} className={`${input} mt-2`} />
             </label>
             <label className="text-sm font-medium text-slate-700">
               Project value (original)

@@ -1,14 +1,28 @@
 import { useEffect, useState } from "react";
-import { Bell, Menu, User } from "lucide-react";
+import {  Menu, User } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import Sidebar from "./Sidebar";
+import { refreshPermissions } from "../utils/permissions";
 
 export default function Layout({ children }) {
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [mobileSidebarPath, setMobileSidebarPath] = useState(null);
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const location = useLocation();
+  const mobileSidebarOpen = mobileSidebarPath === location.pathname;
+  const [, setPermsVersion] = useState(0);
 
   const user = JSON.parse(localStorage.getItem("user"));
+
+  // Keep permissions fresh so role edits show up without a re-login.
+  useEffect(() => {
+    let off = false;
+    refreshPermissions()
+      .then(() => !off && setPermsVersion((v) => v + 1))
+      .catch(() => {});
+    return () => {
+      off = true;
+    };
+  }, []);
 
   useEffect(() => {
     document.body.style.overflow = mobileSidebarOpen ? "hidden" : "auto";
@@ -18,17 +32,11 @@ export default function Layout({ children }) {
     };
   }, [mobileSidebarOpen]);
 
-  useEffect(() => {
-    if (mobileSidebarOpen) {
-      setMobileSidebarOpen(false);
-    }
-  }, [location.pathname]);
-
   const toggleSidebar = () => {
     if (window.innerWidth >= 1024) {
       setSidebarVisible((prev) => !prev);
     } else {
-      setMobileSidebarOpen(true);
+      setMobileSidebarPath(location.pathname);
     }
   };
 
@@ -38,9 +46,9 @@ export default function Layout({ children }) {
       <Sidebar
         mobileOpen={mobileSidebarOpen}
         visible={sidebarVisible}
-        onCloseMobile={() => setMobileSidebarOpen(false)}
+        onCloseMobile={() => setMobileSidebarPath(null)}
         onCloseDesktop={() => setSidebarVisible(false)}
-        onNavigate={() => setMobileSidebarOpen(false)}
+        onNavigate={() => setMobileSidebarPath(null)}
       />
 
       {/* Header */}

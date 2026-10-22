@@ -1,47 +1,47 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Plus, Pencil, Trash2, Eye } from "lucide-react";
+import { Plus, Pencil, Trash2, Eye, Users, UserPlus, Hourglass, Trophy, Mail } from "lucide-react";
+import toast from "react-hot-toast";
 import Layout from "../components/Layout";
 import api from "../api/axios";
-import toast from "react-hot-toast";
+import {
+  PageHeader,
+  StatCard,
+  Badge,
+  Spinner,
+  EmptyState,
+  PrimaryButton,
+  Pagination,
+  SearchBox,
+  IconButton,
+  inputClass,
+} from "../components/ui";
+import { LEAD_STATUSES, statusMeta } from "../constants/crm";
+import { LEAD_SOURCES, sourceLabel } from "../constants/leadSources";
+import { fmtDate, fmtMoney } from "../utils/format";
+import { can, homePath } from "../utils/permissions";
 
-const statusStyle = {
-  NEW: "bg-blue-100 text-blue-700",
-  DEMO_SCHEDULED: "bg-amber-100 text-amber-700",
-  QUOTATION_SENT: "bg-violet-100 text-violet-700",
-  SALES: "bg-emerald-100 text-emerald-700",
-  PROJECT: "bg-green-100 text-green-700",
-  LOST: "bg-slate-200 text-slate-600",
-};
-
-const label = (s) =>
-  s ? s.charAt(0) + s.slice(1).toLowerCase().replaceAll("_", " ") : "-";
+const PER_PAGE = 10;
+const ACTIVE = ["NEW", "DEMO_SCHEDULED", "QUOTATION_SENT"];
+const CONVERTED = ["SALES", "PROJECT"];
 
 export default function Leads() {
   const navigate = useNavigate();
+  const canManage = can("leads.manage");
+
   const [leads, setLeads] = useState([]);
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("ALL");
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState("ALL");
+  const [source, setSource] = useState("ALL");
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
-    let cancelled = false;
-
     api
       .get("/leads")
-      .then((res) => {
-        if (!cancelled) setLeads(res.data.leads || []);
-      })
-      .catch(() => {
-        if (!cancelled) toast.error("Failed to load leads");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
+      .then((res) => setLeads(res.data.leads || []))
+      .catch(() => toast.error("Failed to load leads"))
+      .finally(() => setLoading(false));
   }, []);
 
   const remove = async (id) => {
@@ -55,143 +55,153 @@ export default function Leads() {
     }
   };
 
-  const q = search.toLowerCase();
-  const shown = leads.filter(
-    (l) =>
-      (filter === "ALL" || l.requestType === filter) &&
-      [l.name, l.email, l.company, l.phone].some((v) =>
-        v?.toLowerCase().includes(q),
-      ),
+  const stats = useMemo(
+    () => ({
+      total: leads.length,
+      fresh: leads.filter((l) => l.status === "NEW").length,
+      active: leads.filter((l) => ACTIVE.includes(l.status) && l.status !== "NEW").length,
+      converted: leads.filter((l) => CONVERTED.includes(l.status)).length,
+    }),
+    [leads],
   );
+
+  const shown = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return leads.filter(
+      (l) =>
+        (status === "ALL" || l.status === status) &&
+        (source === "ALL" || l.source === source) &&
+        (!q || [l.name, l.email, l.company, l.phone].some((v) => v?.toLowerCase().includes(q))),
+    );
+  }, [leads, search, status, source]);
+
+  const pageRows = shown.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+
+  // Any filter change goes back to page 1.
+  const onFilter = (setter) => (v) => {
+    setter(v);
+    setPage(1);
+  };
 
   return (
     <Layout>
       <div className="space-y-6">
-        <div className="bg-white rounded-3xl border shadow-sm p-6 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-slate-800">Leads</h1>
-            <p className="text-slate-500 mt-1">
-              People who replied or contacted the team
-            </p>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="bg-slate-50 rounded-2xl p-4">
-              <p className="text-slate-500 text-sm">Total Leads</p>
-              <h2 className="text-3xl font-bold text-slate-800 mt-2">
-                {leads.length}
-              </h2>
-            </div>
-            <button
-              onClick={() => navigate("/add-lead")}
-              className="inline-flex items-center gap-2 rounded-xl bg-[#2b1247] px-5 py-3 text-white hover:bg-[#23163a]"
-            >
-              <Plus size={18} /> Add Lead
-            </button>
-          </div>
+        <PageHeader
+          title="Leads"
+          breadcrumbs={[
+            { label: "Home", to: homePath() },
+            { label: "Apps" },
+            { label: "CRM" },
+            { label: "Leads" },
+          ]}
+          actions={
+            canManage && (
+              <PrimaryButton onClick={() => navigate("/add-lead")}>
+                <Plus size={18} /> Add Lead
+              </PrimaryButton>
+            )
+          }
+        />
+
+        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+          <StatCard label="Total Leads" value={stats.total} icon={<Users size={26} />} />
+          <StatCard label="New Leads" value={stats.fresh} icon={<UserPlus size={26} />} tone="green" />
+          <StatCard label="Demo / Quotation" value={stats.active} icon={<Hourglass size={26} />} tone="amber" />
+          <StatCard label="Converted" value={stats.converted} icon={<Trophy size={26} />} tone="indigo" />
         </div>
 
-        <div className="bg-white rounded-2xl border p-5 shadow-sm flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1 max-w-md">
-            <Search size={18} className="absolute left-3 top-3.5 text-slate-400" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by name, email, company or phone..."
-              className="w-full border border-slate-300 rounded-xl pl-10 pr-4 py-3 outline-none focus:ring-2 focus:ring-[#2b1247]"
-            />
-          </div>
-          <select
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            className="border border-slate-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#2b1247]"
-          >
-            <option value="ALL">All requests</option>
-            <option value="DEMO">Demo</option>
-            <option value="QUOTATION">Quotation</option>
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 flex flex-col lg:flex-row gap-4">
+          <SearchBox value={search} onChange={onFilter(setSearch)} placeholder="Search leads..." />
+          <select value={status} onChange={(e) => onFilter(setStatus)(e.target.value)} className={`${inputClass} lg:w-56`}>
+            <option value="ALL">All Status</option>
+            {LEAD_STATUSES.map((s) => (
+              <option key={s.value} value={s.value}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+          <select value={source} onChange={(e) => onFilter(setSource)(e.target.value)} className={`${inputClass} lg:w-56`}>
+            <option value="ALL">All Sources</option>
+            {LEAD_SOURCES.map((s) => (
+              <option key={s.value} value={s.value}>
+                {s.label}
+              </option>
+            ))}
           </select>
         </div>
 
-        <div className="bg-white rounded-3xl border shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="min-w-250 w-full">
-              <thead>
-                <tr className="bg-slate-100 text-sm font-semibold">
-                  <th className="p-4 text-left">Lead</th>
-                  <th className="p-4 text-left">Contact</th>
-                  <th className="p-4 text-center">Asking for</th>
-                  <th className="p-4 text-center">Demo type</th>
-                  <th className="p-4 text-center">Status</th>
-                  <th className="p-4 text-center">Created</th>
-                  <th className="p-4 text-center">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading && (
-                  <tr>
-                    <td colSpan={7} className="p-8 text-center text-slate-500">
-                      Loading...
-                    </td>
-                  </tr>
-                )}
-                {!loading &&
-                  shown.map((l) => (
-                    <tr key={l._id} className="border-t hover:bg-slate-50">
-                      <td className="p-4">
-                        <p className="font-medium text-slate-800">{l.name}</p>
-                        <p className="text-sm text-slate-500">{l.company || "-"}</p>
-                      </td>
-                      <td className="p-4 text-sm text-slate-600">
-                        <p>{l.email}</p>
-                        <p>{l.phone || "-"}</p>
-                      </td>
-                      <td className="p-4 text-center text-sm">{label(l.requestType)}</td>
-                      <td className="p-4 text-center text-sm">
-                        {l.requestType === "DEMO" ? label(l.demoType) : "-"}
-                      </td>
-                      <td className="p-4 text-center">
-                        <span
-                          className={`px-3 py-1 rounded-full text-xs font-medium ${statusStyle[l.status]}`}
-                        >
-                          {label(l.status)}
-                        </span>
-                      </td>
-                      <td className="p-4 text-center text-sm text-slate-500">
-                        {new Date(l.createdAt).toLocaleDateString()}
-                      </td>
-                      <td className="p-4">
-                        <div className="flex justify-center gap-2">
-                          <button
-                            onClick={() => navigate(`/leads/${l._id}`)}
-                            className="p-2 rounded-xl border border-slate-300 hover:bg-slate-100"
-                          >
-                            <Eye size={16} />
-                          </button>
-                          <button
-                            onClick={() => navigate(`/edit-lead/${l._id}`)}
-                            className="p-2 rounded-xl border border-slate-300 hover:bg-slate-100"
-                          >
-                            <Pencil size={16} />
-                          </button>
-                          <button
-                            onClick={() => remove(l._id)}
-                            className="p-2 rounded-xl border border-red-200 text-red-600 hover:bg-red-50"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                {!loading && shown.length === 0 && (
-                  <tr>
-                    <td colSpan={7} className="p-8 text-center text-slate-500">
-                      No leads found.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
+            <div role="heading" aria-level={2} className="text-lg font-semibold text-slate-900">
+              All Leads
+            </div>
+            <span className="text-slate-500">{shown.length} leads found</span>
           </div>
+
+          {loading ? (
+            <Spinner />
+          ) : shown.length === 0 ? (
+            <EmptyState>No leads found.</EmptyState>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-[1100px] w-full text-left">
+                <thead>
+                  <tr className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    {["Name", "Company", "Email", "Phone", "Source", "Status", "Value", "Assigned To", "Date", "Actions"].map(
+                      (h) => (
+                        <th key={h} className="px-4 py-4">
+                          {h}
+                        </th>
+                      ),
+                    )}
+                  </tr>
+                </thead>
+                <tbody>
+                  {pageRows.map((l) => {
+                    const meta = statusMeta(l.status);
+                    return (
+                      <tr key={l._id} className="border-t border-slate-100 hover:bg-slate-50/60 text-slate-700">
+                        <td className="px-4 py-4 font-semibold text-slate-900">{l.name}</td>
+                        <td className="px-4 py-4">{l.company || "-"}</td>
+                        <td className="px-4 py-4">
+                          <span className="inline-flex items-center gap-2">
+                            <Mail size={14} className="text-slate-400" /> {l.email}
+                          </span>
+                        </td>
+                        <td className="px-4 py-4">{l.phone || "-"}</td>
+                        <td className="px-4 py-4">{sourceLabel(l.source)}</td>
+                        <td className="px-4 py-4">
+                          <Badge className={meta.badge}>{meta.label}</Badge>
+                        </td>
+                        <td className="px-4 py-4 font-bold text-slate-900">{fmtMoney(l.value)}</td>
+                        <td className="px-4 py-4">{l.assignedTo?.name || "-"}</td>
+                        <td className="px-4 py-4 whitespace-nowrap">{fmtDate(l.createdAt)}</td>
+                        <td className="px-4 py-4">
+                          <div className="flex gap-2">
+                            <IconButton onClick={() => navigate(`/leads/${l._id}`)} aria-label="View">
+                              <Eye size={16} />
+                            </IconButton>
+                            {canManage && (
+                              <>
+                                <IconButton onClick={() => navigate(`/edit-lead/${l._id}`)} aria-label="Edit">
+                                  <Pencil size={16} />
+                                </IconButton>
+                                <IconButton tone="danger" onClick={() => remove(l._id)} aria-label="Delete">
+                                  <Trash2 size={16} />
+                                </IconButton>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          <Pagination page={page} perPage={PER_PAGE} total={shown.length} onChange={setPage} />
         </div>
       </div>
     </Layout>

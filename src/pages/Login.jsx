@@ -139,6 +139,7 @@ import api from "../api/axios";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
 import logo from "../assets/logo.png";
+import { landingPath } from "../utils/permissions";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -182,10 +183,11 @@ export default function Login() {
 
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("user", JSON.stringify(res.data.user));
+      localStorage.setItem("permissions", JSON.stringify(res.data.permissions || []));
 
       toast.success("Login Successful");
 
-      navigate(res.data.user.role === "ADMIN" ? "/admin" : "/employee");
+      navigate(landingPath(res.data.user));
     } catch (error) {
       toast.error(error.response?.data?.message || "Invalid Email or Password");
     } finally {

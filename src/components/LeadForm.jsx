@@ -13,6 +13,8 @@ const emptyForm = {
   email: "",
   phone: "",
   source: "",
+  value: "",
+  priority: "MEDIUM",
   requestType: "",
   demoType: "",
   notes: "",
@@ -133,18 +135,43 @@ export default function LeadForm({ title, subtitle, initial, onSubmit }) {
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Lead source *
-            </label>
-            <select value={form.source} onChange={set("source")} className={inputClass}>
-              <option value="">Select source</option>
-              {LEAD_SOURCES.map((s) => (
-                <option key={s.value} value={s.value}>
-                  {s.label}
-                </option>
-              ))}
-            </select>
+          <div className="grid md:grid-cols-3 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Lead source *
+              </label>
+              <select value={form.source} onChange={set("source")} className={inputClass}>
+                <option value="">Select source</option>
+                {LEAD_SOURCES.map((s) => (
+                  <option key={s.value} value={s.value}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Value (₹)
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={form.value}
+                onChange={set("value")}
+                placeholder="e.g. 150000"
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Priority
+              </label>
+              <select value={form.priority} onChange={set("priority")} className={inputClass}>
+                <option value="HIGH">High</option>
+                <option value="MEDIUM">Medium</option>
+                <option value="LOW">Low</option>
+              </select>
+            </div>
           </div>
 
           <div>

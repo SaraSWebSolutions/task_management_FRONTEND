@@ -33,6 +33,8 @@ export default function EditLead() {
             email: lead.email || "",
             phone: lead.phone || "",
             source: lead.source || "OTHER",
+            value: lead.value || "",
+            priority: lead.priority || "MEDIUM",
             requestType: lead.requestType || "",
             demoType: lead.demoType || "",
             notes: lead.notes || "",

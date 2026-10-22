@@ -25,7 +25,7 @@ body {
   --accent-bg: rgba(52, 28, 82, 0.08);
   --accent-border: rgba(43, 18, 71, 0.35);
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --sans: 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
   --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
   --mono: ui-monospace, Consolas, monospace;
 
@@ -210,3 +210,14 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+
+
+/* ---- Theme tokens: change these to re-skin the new modules ---- */
+@theme {
+  --color-brand: #7c3aed;
+  --color-brand-hover: #6d28d9;
+  --color-brand-soft: #ede9fe;
+  --radius-card: 1.5rem;
+}
+
+body { font-family: var(--sans); }
