@@ -46,13 +46,8 @@ export async function refreshPermissions({ force = false } = {}) {
   return data.permissions;
 }
 
-// Where "Home" in breadcrumbs should go for the signed-in user.
-// Admin -> admin dashboard. A manager who can see leads starts at the CRM
-// dashboard (follow-ups, demos, quotations). Everyone else starts at My Work.
-export const landingPath = (user = getUser()) => {
-  if (user?.role === "ADMIN") return "/admin";
-  if (user?.role === "MANAGER" && can("leads.view")) return "/crm-dashboard";
-  return "/my-work";
-};
+// Where "Home" in breadcrumbs, and sign-in, should go. Everyone has the same
+// dashboard; each card on it only shows data the person is allowed to see.
+export const landingPath = () => "/dashboard";
 
 export const homePath = () => landingPath();

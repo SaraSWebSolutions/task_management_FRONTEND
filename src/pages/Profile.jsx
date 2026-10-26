@@ -1,379 +1,252 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
+import { Camera, Mail, Phone, Building2, CalendarDays, ListTodo, CircleCheck, Clock, FolderKanban, KeyRound, Bell, CalendarRange } from "lucide-react";
+import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import toast from "react-hot-toast";
 import Layout from "../components/Layout";
 import api from "../api/axios";
-import toast from "react-hot-toast";
+import { PageHeader, Card, Avatar, Spinner, EmptyState, Field, PrimaryButton, GhostButton, inputClass } from "../components/ui";
+import { KpiCard } from "../components/finance/bits";
+import { apiError } from "../components/finance/helpers";
+import { fmtDate, timeAgo } from "../utils/format";
 
-import { Loader2 } from "lucide-react";
-
-export default function Profile() {
-  const [profile, setProfile] = useState({});
-
-  const [passwords, setPasswords] = useState({
-    currentPassword: "",
-    newPassword: "",
+// Shrinks a chosen photo to a small square-ish JPEG so it stays well under the 2 MB limit
+const resizeImage = (file, max = 360) =>
+  new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const scale = Math.min(1, max / Math.max(img.width, img.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(url);
+      resolve(canvas.toDataURL("image/jpeg", 0.85));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("That file isn't an image")); };
+    img.src = url;
   });
 
-  const [pageLoading, setPageLoading] = useState(true);
-  const [profileLoading, setProfileLoading] = useState(false);
-  const [passwordLoading, setPasswordLoading] = useState(false);
+// Keep the header (which reads the saved login) in step with the profile
+const syncLogin = (u) => {
+  try {
+    const saved = JSON.parse(localStorage.getItem("user") || "{}");
+    localStorage.setItem("user", JSON.stringify({ ...saved, name: u.name, profileImage: u.profileImage || undefined }));
+  } catch { /* ignore */ }
+};
 
-  useEffect(() => {
-    loadProfile();
+const tenure = (d) => {
+  if (!d) return "";
+  const months = Math.max(0, Math.floor((Date.now() - new Date(d)) / (30.44 * 86400000)));
+  const y = Math.floor(months / 12), m = months % 12;
+  return [y && `${y} year${y > 1 ? "s" : ""}`, m && `${m} month${m > 1 ? "s" : ""}`].filter(Boolean).join(", ") || "Just joined";
+};
+
+const blankPw = { currentPassword: "", newPassword: "", confirm: "" };
+
+export default function Profile() {
+  const [user, setUser] = useState(null);
+  const [summary, setSummary] = useState(null);
+  const [form, setForm] = useState({ name: "", phone: "" });
+  const [pw, setPw] = useState(blankPw);
+  const [saving, setSaving] = useState("");
+  const fileRef = useRef(null);
+
+  const load = useCallback(async () => {
+    try {
+      const [p, s] = await Promise.all([api.get("/profile"), api.get("/profile/summary")]);
+      setUser(p.data);
+      setSummary(s.data);
+      setForm({ name: p.data.name || "", phone: p.data.phone || "" });
+      syncLogin(p.data);
+    } catch (e) {
+      toast.error(apiError(e, "Failed to load profile"));
+    }
   }, []);
 
-  const loadProfile = async () => {
-    try {
-      setPageLoading(true);
+  useEffect(() => { load(); }, [load]);
 
-      const res = await api.get("/profile");
-      setProfile(res.data);
-    } catch {
-      toast.error("Failed to load profile");
+  const saveDetails = async () => {
+    if (!form.name.trim()) return toast.error("Name is required");
+    try {
+      setSaving("details");
+      const { data } = await api.put("/profile", { name: form.name, phone: form.phone });
+      setUser(data);
+      syncLogin(data);
+      toast.success("Profile updated");
+    } catch (e) {
+      toast.error(apiError(e, "Failed to update profile"));
     } finally {
-      setPageLoading(false);
+      setSaving("");
     }
   };
 
-  const saveProfile = async () => {
+  const pickPhoto = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
     try {
-      setProfileLoading(true);
-
-      await api.put("/profile", profile);
-      toast.success("Profile Updated Successfully");
-    } catch {
-      toast.error("Update Failed");
+      setSaving("photo");
+      const profileImage = await resizeImage(file);
+      const { data } = await api.put("/profile", { profileImage });
+      setUser(data);
+      syncLogin(data);
+      toast.success("Photo updated");
+    } catch (err) {
+      toast.error(apiError(err, err.message || "Failed to update photo"));
     } finally {
-      setProfileLoading(false);
+      setSaving("");
     }
   };
 
-  const changePassword = async () => {
+  const removePhoto = async () => {
     try {
-      setPasswordLoading(true);
-
-      await api.put("/profile/change-password", passwords);
-
-      toast.success("Password Changed");
-
-      setPasswords({
-        currentPassword: "",
-        newPassword: "",
-      });
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Password Change Failed");
+      setSaving("photo");
+      const { data } = await api.put("/profile", { profileImage: "" });
+      setUser(data);
+      syncLogin(data);
+    } catch (err) {
+      toast.error(apiError(err, "Failed to remove photo"));
     } finally {
-      setPasswordLoading(false);
+      setSaving("");
     }
   };
 
-  if (pageLoading) {
-    return (
-      <Layout>
-        <div className="flex items-center justify-center min-h-[70vh]">
-          <div className="text-center">
-            <Loader2
-              size={50}
-              className="animate-spin text-[var(--brand)] mx-auto mb-4"
-            />
+  const savePassword = async () => {
+    if (!pw.currentPassword || !pw.newPassword) return toast.error("Enter your current and new password");
+    if (pw.newPassword.length < 6) return toast.error("New password must be at least 6 characters");
+    if (pw.newPassword !== pw.confirm) return toast.error("The two new passwords don't match");
+    try {
+      setSaving("password");
+      await api.put("/profile/change-password", { currentPassword: pw.currentPassword, newPassword: pw.newPassword });
+      toast.success("Password updated");
+      setPw(blankPw);
+    } catch (e) {
+      toast.error(apiError(e, "Failed to change password"));
+    } finally {
+      setSaving("");
+    }
+  };
 
-            <p className="text-slate-600 font-medium text-lg">
-              Loading profile...
-            </p>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
+  const crumbs = [{ label: "Home" }, { label: "My Profile" }];
+  if (!user) return <Layout><PageHeader title="My Profile" breadcrumbs={crumbs} /><Spinner /></Layout>;
+
+  const s = summary?.stats;
+  const dirty = form.name.trim() !== (user.name || "") || form.phone.trim() !== (user.phone || "");
 
   return (
     <Layout>
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
+      <div className="space-y-6">
+        <PageHeader title="My Profile" breadcrumbs={crumbs} actions={<><Link to="/notifications"><GhostButton><Bell size={18} /> Notifications</GhostButton></Link><Link to="/calendar"><GhostButton><CalendarRange size={18} /> Calendar</GhostButton></Link></>} />
 
-        <div className="bg-gradient-to-r from-[#2b1247] to-[#47216f] rounded-3xl p-8 shadow-lg">
-          <div className="flex flex-col lg:flex-row items-center gap-6">
-            <div className="w-28 h-28 rounded-full bg-white text-[#2b1247] text-4xl font-bold flex items-center justify-center shadow-lg">
-              {profile.name
-                ?.split(" ")
-                ?.map((n) => n[0])
-                ?.join("")
-                ?.substring(0, 2)
-                ?.toUpperCase()}
-            </div>
-
-            <div className="flex-1">
-              <h1 className="text-3xl font-bold text-white!">{profile.name}</h1>
-
-              <p className="text-purple-200 mt-1 text-start">{profile.email}</p>
-
-              <div className="flex flex-wrap gap-3 mt-4">
-                <span
-                  className={`px-4 py-2 rounded-full text-sm font-medium ${
-                    profile.role === "ADMIN"
-                      ? "bg-purple-200 text-purple-800"
-                      : "bg-blue-200 text-blue-800"
-                  }`}
-                >
-                  {profile.role}
-                </span>
-
-                <span
-                  className={`px-4 py-2 rounded-full text-sm font-medium ${
-                    profile.status === "ACTIVE"
-                      ? "bg-green-200 text-green-800"
-                      : "bg-red-200 text-red-800"
-                  }`}
-                >
-                  {profile.status}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Info Cards */}
-
-        <div className="grid md:grid-cols-3 lg:grid-cols-5 gap-4">
-          <div className="bg-white rounded-2xl border p-4 shadow-sm">
-            <p className="text-slate-500 text-sm">Employee ID</p>
-            <h3 className="font-semibold mt-2">
-              {profile.employeeId || "N/A"}
-            </h3>
-          </div>
-
-          <div className="bg-white rounded-2xl border p-4 shadow-sm">
-            <p className="text-slate-500 text-sm">Department</p>
-            <h3 className="font-semibold mt-2">
-              {profile.department || "N/A"}
-            </h3>
-          </div>
-
-          <div className="bg-white rounded-2xl border p-4 shadow-sm">
-            <p className="text-slate-500 text-sm">Designation</p>
-            <h3 className="font-semibold mt-2">
-              {profile.designation || "N/A"}
-            </h3>
-          </div>
-
-          <div className="bg-white rounded-2xl border p-4 shadow-sm">
-            <p className="text-slate-500 text-sm">Phone</p>
-            <h3 className="font-semibold mt-2">{profile.phone || "N/A"}</h3>
-          </div>
-
-          <div className="bg-white rounded-2xl border p-4 shadow-sm">
-            <p className="text-slate-500 text-sm">Joining Date</p>
-            <h3 className="font-semibold mt-2">
-              {profile.joiningDate
-                ? new Date(profile.joiningDate).toLocaleDateString()
-                : "N/A"}
-            </h3>
-          </div>
-        </div>
-
-        <div className="grid lg:grid-cols-3 gap-6">
-          {/* Edit Profile */}
-
-          <div className="lg:col-span-2 bg-white rounded-3xl border shadow-sm p-6">
-            <h2 className="text-2xl font-bold text-[#2b1247] mb-6">
-              Edit Profile
-            </h2>
-
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm text-slate-600 mb-2">
-                  Employee ID
-                </label>
-
-                <input
-                  value={profile.employeeId || ""}
-                  disabled
-                  className="w-full border rounded-xl p-3 bg-slate-100"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm text-slate-600 mb-2">
-                  Full Name
-                </label>
-
-                <input
-                  value={profile.name || ""}
-                  onChange={(e) =>
-                    setProfile({
-                      ...profile,
-                      name: e.target.value,
-                    })
-                  }
-                  className="w-full border rounded-xl p-3"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm text-slate-600 mb-2">
-                  Email
-                </label>
-
-                <input
-                  value={profile.email || ""}
-                  disabled
-                  className="w-full border rounded-xl p-3 bg-slate-100"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm text-slate-600 mb-2">
-                  Phone
-                </label>
-
-                <input
-                  value={profile.phone || ""}
-                  onChange={(e) =>
-                    setProfile({
-                      ...profile,
-                      phone: e.target.value,
-                    })
-                  }
-                  className="w-full border rounded-xl p-3"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm text-slate-600 mb-2">
-                  Department
-                </label>
-
-                <input
-                  value={profile.department || ""}
-                  onChange={(e) =>
-                    setProfile({
-                      ...profile,
-                      department: e.target.value,
-                    })
-                  }
-                  className="w-full border rounded-xl p-3"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm text-slate-600 mb-2">
-                  Designation
-                </label>
-
-                <select
-                  value={profile.designation || "Developer"}
-                  onChange={(e) =>
-                    setProfile({
-                      ...profile,
-                      designation: e.target.value,
-                    })
-                  }
-                  className="w-full border rounded-xl p-3"
-                >
-                  <option value="Developer">Developer</option>
-                  <option value="Tester">Tester</option>
-                  <option value="UI Designer">UI Designer</option>
-                  <option value="Team Lead">Team Lead</option>
-                  <option value="Project Manager">Project Manager</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm text-slate-600 mb-2">
-                  Joining Date
-                </label>
-
-                <input
-                  type="date"
-                  value={
-                    profile.joiningDate ? profile.joiningDate.slice(0, 10) : ""
-                  }
-                  onChange={(e) =>
-                    setProfile({
-                      ...profile,
-                      joiningDate: e.target.value,
-                    })
-                  }
-                  className="w-full border rounded-xl p-3"
-                />
+        <div className="grid gap-6 xl:grid-cols-3 items-start">
+          {/* Left: who I am */}
+          <div className="space-y-6">
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden text-center">
+              <div className="h-28 bg-linear-to-r from-indigo-500 via-violet-500 to-pink-500" />
+              <div className="px-6 pb-6 -mt-14">
+                <div className="relative inline-block">
+                  <Avatar name={user.name} src={user.profileImage} size="h-28 w-28" text="text-3xl" />
+                  <button onClick={() => fileRef.current?.click()} disabled={saving === "photo"} aria-label="Change photo" className="absolute bottom-0 right-0 h-9 w-9 rounded-full bg-brand text-white flex items-center justify-center border-2 border-white shadow hover:opacity-90 disabled:opacity-60"><Camera size={16} /></button>
+                  <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={pickPhoto} />
+                </div>
+                <h2 className="mt-3 text-2xl font-bold text-slate-900">{user.name}</h2>
+                <p className="text-slate-500">{user.designation || user.role}</p>
+                <div className="mt-3 flex items-center justify-center gap-2">
+                  <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-semibold text-violet-700">{user.role}</span>
+                  <span className={`rounded-full px-3 py-1 text-xs font-semibold ${user.status === "INACTIVE" ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700"}`}>{user.status === "INACTIVE" ? "Inactive" : "Active"}</span>
+                </div>
+                {user.profileImage && <button onClick={removePhoto} className="mt-3 text-sm text-slate-500 hover:text-red-600">Remove photo</button>}
               </div>
             </div>
 
-            {/* <button
-              onClick={saveProfile}
-              className="mt-6 bg-[#2b1247] hover:bg-[#1d0d33] text-white px-8 py-3 rounded-xl font-medium"
-            >
-              Update Profile
-            </button> */}
-            <button
-              onClick={saveProfile}
-              disabled={profileLoading}
-              className="mt-6 bg-[#2b1247] hover:bg-[#1d0d33] text-white px-8 py-3 rounded-xl font-medium flex items-center gap-2 disabled:opacity-70"
-            >
-              {profileLoading ? (
-                <>
-                  <Loader2 size={18} className="animate-spin" />
-                  Updating...
-                </>
-              ) : (
-                "Update Profile"
-              )}
-            </button>
+            <Card title="Contact Information">
+              <ul className="space-y-5">
+                {[
+                  [Mail, "Email", user.email, "bg-indigo-50 text-indigo-500"],
+                  [Phone, "Phone", user.phone || "Not added", "bg-emerald-50 text-emerald-500"],
+                  [Building2, "Department", user.department || "Not set", "bg-cyan-50 text-cyan-500"],
+                  [CalendarDays, "Joined", user.joiningDate || user.createdAt ? `${fmtDate(user.joiningDate || user.createdAt)} (${tenure(user.joiningDate || user.createdAt)})` : "-", "bg-amber-50 text-amber-500"],
+                ].map(([Icon, label, value, tint]) => (
+                  <li key={label} className="flex items-center gap-4">
+                    <span className={`h-11 w-11 shrink-0 rounded-xl flex items-center justify-center ${tint}`}><Icon size={19} /></span>
+                    <div className="min-w-0"><p className="text-xs font-semibold tracking-wider text-slate-400 uppercase">{label}</p><p className="font-semibold text-slate-900 break-words">{value}</p></div>
+                  </li>
+                ))}
+              </ul>
+            </Card>
           </div>
 
-          {/* Change Password */}
+          {/* Right: my work + settings */}
+          <div className="xl:col-span-2 space-y-6">
+            <div className="rounded-2xl border border-violet-100 bg-linear-to-r from-violet-50 to-pink-50 p-6">
+              <p className="text-xs font-bold tracking-widest text-brand">WELCOME BACK</p>
+              <p className="mt-1 text-2xl font-bold text-slate-900">Hi, {user.name?.split(" ")[0]}!</p>
+              <p className="mt-1 text-slate-600">
+                {s ? <>You have <strong className="text-brand">{s.openTasks} open task{s.openTasks === 1 ? "" : "s"}</strong>{s.overdue ? <> and <strong className="text-red-600">{s.overdue} overdue</strong></> : null}.</> : "Loading your work..."}
+              </p>
+            </div>
 
-          <div className="bg-white rounded-3xl border shadow-sm p-6">
-            <h2 className="text-2xl font-bold text-[#2b1247] mb-6">
-              Change Password
-            </h2>
+            {s && (
+              <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+                <KpiCard label="Open Tasks" value={s.openTasks} icon={<ListTodo size={24} />} />
+                <KpiCard label="Done This Month" value={s.doneMonth} icon={<CircleCheck size={24} />} tone="green" />
+                <KpiCard label="Hours This Month" value={`${s.hoursMonth}h`} icon={<Clock size={24} />} tone="amber" />
+                <KpiCard label="Projects" value={s.projects} icon={<FolderKanban size={24} />} tone="cyan" />
+              </div>
+            )}
 
-            <div className="space-y-4">
-              <input
-                type="password"
-                placeholder="Current Password"
-                value={passwords.currentPassword}
-                onChange={(e) =>
-                  setPasswords({
-                    ...passwords,
-                    currentPassword: e.target.value,
-                  })
-                }
-                className="w-full border rounded-xl p-3"
-              />
+            <div className="grid gap-6 lg:grid-cols-2">
+              <Card title="Weekly Productivity" subtitle="Tasks completed and hours logged, last 7 days">
+                <div className="h-60">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart data={summary?.week || []}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="label" />
+                      <YAxis yAxisId="a" allowDecimals={false} />
+                      <YAxis yAxisId="h" orientation="right" />
+                      <Tooltip />
+                      <Legend />
+                      <Bar yAxisId="a" dataKey="done" name="Tasks done" fill="#7c3aed" radius={[4, 4, 0, 0]} />
+                      <Line yAxisId="h" type="monotone" dataKey="hours" name="Hours" stroke="#10b981" strokeWidth={2} />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </div>
+              </Card>
 
-              <input
-                type="password"
-                placeholder="New Password"
-                value={passwords.newPassword}
-                onChange={(e) =>
-                  setPasswords({
-                    ...passwords,
-                    newPassword: e.target.value,
-                  })
-                }
-                className="w-full border rounded-xl p-3"
-              />
-
-              {/* <button
-                onClick={changePassword}
-                className="w-full bg-[#2b1247] hover:bg-[#1d0d33] text-white py-3 rounded-xl font-medium"
-              >
-                Change Password
-              </button> */}
-              <button
-                onClick={changePassword}
-                disabled={passwordLoading}
-                className="w-full bg-[#2b1247] hover:bg-[#1d0d33] text-white py-3 rounded-xl font-medium flex items-center justify-center gap-2 disabled:opacity-70"
-              >
-                {passwordLoading ? (
-                  <>
-                    <Loader2 size={18} className="animate-spin" />
-                    Updating...
-                  </>
-                ) : (
-                  "Change Password"
+              <Card title="Recent Activity">
+                {!summary?.activity?.length ? <EmptyState>No activity yet. Finish a task or log time and it shows here.</EmptyState> : (
+                  <ul className="space-y-4">
+                    {summary.activity.map((a, i) => (
+                      <li key={i} className="flex items-start gap-3">
+                        <span className={`mt-1 h-8 w-8 shrink-0 rounded-full flex items-center justify-center ${a.kind === "task" ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-600"}`}>{a.kind === "task" ? <CircleCheck size={15} /> : <Clock size={15} />}</span>
+                        <div className="min-w-0"><p className="text-slate-800 break-words">{a.text}</p><p className="text-xs text-slate-400">{timeAgo(a.at)}</p></div>
+                      </li>
+                    ))}
+                  </ul>
                 )}
-              </button>
+              </Card>
+            </div>
+
+            <div className="grid gap-6 lg:grid-cols-2">
+              <Card title="Personal Details" subtitle="Role, designation and department are managed by your admin">
+                <div className="space-y-5">
+                  <Field label="Full name" required><input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} className={inputClass} /></Field>
+                  <Field label="Phone"><input value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} placeholder="+91 98765 43210" className={inputClass} /></Field>
+                  <Field label="Email" hint="Used to sign in. Ask your admin to change it."><input value={user.email || ""} disabled className={`${inputClass} bg-slate-50 text-slate-500`} /></Field>
+                  <PrimaryButton disabled={!dirty || saving === "details"} onClick={saveDetails}>{saving === "details" ? "Saving..." : "Save Changes"}</PrimaryButton>
+                </div>
+              </Card>
+
+              <Card title="Change Password" action={<KeyRound size={18} className="text-slate-400" />}>
+                <div className="space-y-5">
+                  <Field label="Current password" required><input type="password" autoComplete="current-password" value={pw.currentPassword} onChange={(e) => setPw((p) => ({ ...p, currentPassword: e.target.value }))} className={inputClass} /></Field>
+                  <Field label="New password" required hint="At least 6 characters"><input type="password" autoComplete="new-password" value={pw.newPassword} onChange={(e) => setPw((p) => ({ ...p, newPassword: e.target.value }))} className={inputClass} /></Field>
+                  <Field label="Confirm new password" required><input type="password" autoComplete="new-password" value={pw.confirm} onChange={(e) => setPw((p) => ({ ...p, confirm: e.target.value }))} className={inputClass} /></Field>
+                  <PrimaryButton disabled={saving === "password"} onClick={savePassword}>{saving === "password" ? "Updating..." : "Update Password"}</PrimaryButton>
+                </div>
+              </Card>
             </div>
           </div>
         </div>

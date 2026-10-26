@@ -1,23 +1,24 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 
 import ProtectedRoute from "../components/ProtectedRoute";
-import AdminRoute from "./AdminRoutes";
 import PermissionRoute from "../components/PermissionRoute";
 
 import Login from "../pages/Login";
 import Profile from "../pages/Profile";
 import MyWork from "../pages/MyWork";
+import Dashboard from "../pages/Dashboard";
+import FinanceDashboard from "../pages/FinanceDashboard";
+import Notifications from "../pages/Notifications";
+import Calendar from "../pages/Calendar";
+import CalendarEvent from "../pages/CalendarEvent";
 
-import AdminDashboard from "../pages/AdminDashboard";
 
 import TaskDetails from "../pages/TaskDetails";
 
 import Clients from "../pages/Clients";
 import AddClient from "../pages/AddClient";
 import EditClient from "../pages/EditClient";
-import Campaigns from "../pages/Campaign";
-import AddCampaign from "../pages/AddCampaign";
-import ViewCampaign from "../pages/ViewCampaign";
+import Campaigns from "../pages/Campaigns";
 
 import Leads from "../pages/Leads";
 import AddLead from "../pages/AddLead";
@@ -84,7 +85,7 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
-      <Route path="/employee" element={<Navigate to="/my-work" replace />} />
+      <Route path="/employee" element={<Navigate to="/dashboard" replace />} />
       <Route path="/my-tasks" element={<Navigate to="/my-work" replace />} />
       <Route path="/add-task" element={<Navigate to="/my-work" replace />} />
       <Route path="/edit-task/:id" element={<Navigate to="/my-work" replace />} />
@@ -95,15 +96,24 @@ const AppRoutes = () => {
       <Route path="/employees" element={<Navigate to="/users" replace />} />
       <Route path="/add-employee" element={<Navigate to="/users/add" replace />} />
       <Route path="/edit-employee/:id" element={<Navigate to="/users" replace />} />
-      {/* Admin */}
+      {/* Email campaigns are managed from the inbox-style page; old sub-pages redirect */}
+      <Route path="/campaigns/add" element={<Navigate to="/campaigns" replace />} />
+      <Route path="/campaigns/:id" element={<Navigate to="/campaigns" replace />} />
+      <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+      <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
+      <Route path="/calendar/event/:id" element={<ProtectedRoute><CalendarEvent /></ProtectedRoute>} />
+      {/* One dashboard for everyone; each card only appears if the person may see that data */}
+      <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+      <Route path="/admin" element={<Navigate to="/dashboard" replace />} />
       <Route
-        path="/admin"
+        path="/finance/dashboard"
         element={
-          <AdminRoute>
-            <AdminDashboard />
-          </AdminRoute>
+          <PermissionRoute perm="finance.view">
+            <FinanceDashboard />
+          </PermissionRoute>
         }
       />
+      {/* Admin */}
       <Route
         path="/users"
         element={
@@ -205,22 +215,6 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <Campaigns />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/campaigns/add"
-        element={
-          <ProtectedRoute>
-            <AddCampaign />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/campaigns/:id"
-        element={
-          <ProtectedRoute>
-            <ViewCampaign />
           </ProtectedRoute>
         }
       />

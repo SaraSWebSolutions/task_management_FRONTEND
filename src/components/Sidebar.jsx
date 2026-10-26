@@ -15,11 +15,12 @@ import {
   Briefcase,
   Wallet,
   ChartColumn,
+  CalendarDays,
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import logo from "../assets/logo.png";
 import favlogo from "../assets/favicon.png";
-import { can, canAny } from "../utils/permissions";
+import { canAny } from "../utils/permissions";
 
 // Every item is gated by a permission; Admin passes all of them.
 const USER_GROUP = {
@@ -43,7 +44,6 @@ const CRM_GROUP = {
   text: "CRM",
   icon: Briefcase,
   children: [
-    { to: "/crm-dashboard", text: "Dashboard", perm: "leads.view" },
     {
       to: "/leads",
       text: "Leads",
@@ -67,7 +67,6 @@ const PROJECT_GROUP = {
   text: "Projects",
   icon: FolderKanban,
   children: [
-    { to: "/pm/dashboard", text: "Dashboard", perm: ["projects.view", "projecttasks.view"] },
     {
       to: "/projects",
       text: "Project List",
@@ -113,16 +112,47 @@ const ANALYTICS_GROUP = {
   ],
 };
 
-const MODULES = [
-  { group: USER_GROUP },
-  { to: "/clients", text: "Clients", icon: Building2, perm: "clients.view" },
-  { group: CRM_GROUP },
-  { group: PROJECT_GROUP },
-  { group: FINANCE_GROUP },
-  { group: ANALYTICS_GROUP },
-  { to: "/reports", text: "Reports", icon: FileText, perm: "reports.view" },
-  { to: "/target-dashboard", text: "Target Dashboard", icon: Target, perm: "reports.view" },
-  { to: "/campaigns", text: "Campaigns", icon: Mail, perm: "campaigns.view" },
+const DASHBOARD_GROUP = {
+  key: "dashboard",
+  text: "Dashboard",
+  icon: LayoutDashboard,
+  children: [
+    { to: "/dashboard", text: "Default" },
+    { to: "/crm-dashboard", text: "CRM", perm: "leads.view" },
+    { to: "/pm/dashboard", text: "Project Management", perm: ["projects.view", "projecttasks.view"] },
+    { to: "/finance/dashboard", text: "Finance", perm: "finance.view" },
+  ],
+};
+
+// Sidebar layout: section label -> items. A group opens into its children.
+const SECTIONS = [
+  {
+    label: "Main",
+    items: [
+      { group: DASHBOARD_GROUP },
+      { to: "/my-work", text: "My Work", icon: ClipboardList, staffOnly: true },
+      { to: "/calendar", text: "Calendar", icon: CalendarDays },
+    ],
+  },
+  {
+    label: "Apps & Modules",
+    items: [
+      { group: USER_GROUP },
+      { to: "/clients", text: "Clients", icon: Building2, perm: "clients.view" },
+      { group: CRM_GROUP },
+      { group: PROJECT_GROUP },
+      { to: "/campaigns", text: "Campaigns", icon: Mail, perm: "campaigns.view" },
+    ],
+  },
+  {
+    label: "Finance & Reports",
+    items: [
+      { group: FINANCE_GROUP },
+      { group: ANALYTICS_GROUP },
+      { to: "/reports", text: "Reports", icon: FileText, perm: "reports.view" },
+      { to: "/target-dashboard", text: "Target Dashboard", icon: Target, perm: "reports.view" },
+    ],
+  },
 ];
 
 export default function Sidebar({
@@ -157,16 +187,14 @@ export default function Sidebar({
 
   const desktopWidth = visible ? "lg:w-64" : "lg:w-20";
 
-  const top = isAdmin
-    ? [{ to: "/admin", text: "Dashboard", icon: LayoutDashboard }]
-    : [{ to: "/my-work", text: "My Work", icon: ClipboardList }];
-
-  // Resolve permissions once per render.
-  const modules = MODULES.map((m) =>
-    m.group
-      ? { ...m.group, children: m.group.children.filter((c) => canAny(...[].concat(c.perm))) }
-      : m,
-  ).filter((m) => (m.children ? m.children.length > 0 : can(m.perm)));
+  // Work out what this person may see: a child or link with no `perm` is open to everyone.
+  const allowed = (perm) => !perm || canAny(...[].concat(perm));
+  const sections = SECTIONS.map((s) => ({
+    label: s.label,
+    items: s.items
+      .map((m) => (m.group ? { ...m.group, children: m.group.children.filter((c) => allowed(c.perm)) } : m))
+      .filter((m) => (m.children ? m.children.length > 0 : allowed(m.perm) && !(m.staffOnly && isAdmin))),
+  })).filter((s) => s.items.length > 0);
 
   const renderLink = (item) => (
     <MenuLink
@@ -206,11 +234,14 @@ export default function Sidebar({
           type="button"
           onClick={() => setOpenGroups((s) => ({ ...s, [g.key]: !open }))}
           className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-[15px] font-medium transition ${
-            childActive ? "bg-brand-soft text-brand-hover" : "text-slate-600 hover:bg-slate-50"
+            childActive ? "bg-brand-soft text-brand-hover font-semibold" : "text-slate-600 hover:bg-slate-50"
           }`}
         >
           <Icon size={20} />
           <span className="flex-1 text-left">{g.text}</span>
+          {g.key === "dashboard" && (
+            <span className="h-6 min-w-6 px-1.5 rounded-full bg-brand text-white text-xs font-bold flex items-center justify-center">{g.children.length}</span>
+          )}
           <ChevronDown size={16} className={`transition-transform ${open ? "rotate-180" : ""}`} />
         </button>
 
@@ -224,7 +255,7 @@ export default function Sidebar({
                   to={c.to}
                   onClick={onNavigate}
                   className={`flex items-center gap-4 pl-8 pr-4 py-2.5 rounded-xl text-sm transition ${
-                    active ? "bg-brand-soft text-brand-hover font-medium" : "text-slate-600 hover:bg-slate-50"
+                    active ? "bg-brand-soft text-brand-hover font-semibold" : "text-slate-600 hover:bg-slate-50"
                   }`}
                 >
                   <span
@@ -288,14 +319,16 @@ export default function Sidebar({
 
         {/* Scrollable Menu */}
         <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-3 py-4">
-          {top.map(renderLink)}
-
-          {modules.length > 0 && visible && (
-            <p className="px-4 pt-4 pb-2 text-xs font-semibold tracking-wider text-slate-400 uppercase text-left">
-              Apps &amp; Modules
-            </p>
-          )}
-          {modules.map((m) => (m.children ? renderGroup(m) : renderLink(m)))}
+          {sections.map((s) => (
+            <div key={s.label} className="mb-2">
+              {visible && (
+                <p className="px-4 pt-4 pb-2 text-xs font-semibold tracking-wider text-slate-400 uppercase text-left">
+                  {s.label}
+                </p>
+              )}
+              {s.items.map((m) => (m.children ? renderGroup(m) : renderLink(m)))}
+            </div>
+          ))}
 
           <div className="mt-2">
             {renderLink({ to: "/profile", text: "Profile", icon: User })}

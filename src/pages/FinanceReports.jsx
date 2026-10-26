@@ -44,10 +44,12 @@ export default function FinanceReports() {
   const lines = p
     ? [
         ["Revenue (payments received)", p.revenue, "head"],
+        ["GST collected (owed to the government)", -p.gstCollected, "sub"],
         ["Team cost (logged time x hourly rate)", -p.teamCost, "sub"],
         ["Gross Profit", p.grossProfit, "total"],
         ...p.expenses.map((e) => [e.category, -e.amount, "sub"]),
         ["Total Operating Expenses", -p.totalExpenses, "total"],
+        ["GST credit (GST paid on expenses)", p.gstCredit, "sub"],
         ["Net Profit", p.netProfit, "grand"],
       ]
     : [];
@@ -103,8 +105,8 @@ export default function FinanceReports() {
         {!data ? <Spinner /> : (
           <>
             <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-              <KpiCard label="Gross Margin" value={`${k.grossMargin || 0}%`} icon={<Percent size={26} />} hint="(Revenue - team cost) / revenue" />
-              <KpiCard label="Net Profit Margin" value={`${k.netMargin || 0}%`} icon={<Scale size={26} />} tone="green" hint="Net profit / revenue" />
+              <KpiCard label="Gross Margin" value={`${k.grossMargin || 0}%`} icon={<Percent size={26} />} hint="Revenue without GST, less team cost" />
+              <KpiCard label="Net Profit Margin" value={`${k.netMargin || 0}%`} icon={<Scale size={26} />} tone="green" hint="Net profit / revenue without GST" />
               <KpiCard label="Net Profit" value={fmtShort(k.netProfit)} icon={<Wallet size={26} />} tone="cyan" hint={k.netProfit < 0 ? "Loss in this period" : undefined} />
               <KpiCard label="Receivables" value={fmtShort(k.receivables)} icon={<Hourglass size={26} />} tone="amber" hint={`${fmtShort(k.overdue)} overdue`} />
             </div>
