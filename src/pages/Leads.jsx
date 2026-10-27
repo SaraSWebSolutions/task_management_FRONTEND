@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { Plus, Pencil, Trash2, Eye, Users, UserPlus, Hourglass, Trophy, Mail } from "lucide-react";
 import toast from "react-hot-toast";
 import Layout from "../components/Layout";
+import LeadDrawer from "../components/leads/LeadDrawer";
 import api from "../api/axios";
 import {
   PageHeader,
@@ -27,7 +28,12 @@ const CONVERTED = ["SALES", "PROJECT"];
 
 export default function Leads() {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const { id: editId } = useParams();
   const canManage = can("leads.manage");
+
+  // /add-lead and /edit-lead/:id open the slide-over drawer on top of this list.
+  const drawerOpen = pathname.replace(/\/+$/, "") === "/add-lead" || Boolean(editId);
 
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -36,13 +42,21 @@ export default function Leads() {
   const [source, setSource] = useState("ALL");
   const [page, setPage] = useState(1);
 
+  const [reloadKey, setReloadKey] = useState(0);
+
   useEffect(() => {
     api
       .get("/leads")
       .then((res) => setLeads(res.data.leads || []))
       .catch(() => toast.error("Failed to load leads"))
       .finally(() => setLoading(false));
-  }, []);
+  }, [reloadKey]);
+
+  const closeDrawer = useCallback(() => navigate("/leads"), [navigate]);
+  const onSaved = useCallback(() => {
+    navigate("/leads");
+    setReloadKey((k) => k + 1);
+  }, [navigate]);
 
   const remove = async (id) => {
     if (!window.confirm("Delete this lead?")) return;
@@ -103,14 +117,14 @@ export default function Leads() {
           }
         />
 
-        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-3 sm:gap-5 grid-cols-1 min-[420px]:grid-cols-2 xl:grid-cols-4">
           <StatCard label="Total Leads" value={stats.total} icon={<Users size={26} />} />
           <StatCard label="New Leads" value={stats.fresh} icon={<UserPlus size={26} />} tone="green" />
           <StatCard label="Demo / Quotation" value={stats.active} icon={<Hourglass size={26} />} tone="amber" />
           <StatCard label="Converted" value={stats.converted} icon={<Trophy size={26} />} tone="indigo" />
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 flex flex-col lg:flex-row gap-4">
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-3 sm:p-5 flex flex-col lg:flex-row gap-3 sm:gap-4">
           <SearchBox value={search} onChange={onFilter(setSearch)} placeholder="Search leads..." />
           <select value={status} onChange={(e) => onFilter(setStatus)(e.target.value)} className={`${inputClass} lg:w-56`}>
             <option value="ALL">All Status</option>
@@ -144,16 +158,25 @@ export default function Leads() {
             <EmptyState>No leads found.</EmptyState>
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-[1100px] w-full text-left">
+              <table className="w-full text-left text-sm">
                 <thead>
                   <tr className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    {["Name", "Company", "Email", "Phone", "Source", "Status", "Value", "Assigned To", "Date", "Actions"].map(
-                      (h) => (
-                        <th key={h} className="px-4 py-4">
-                          {h}
-                        </th>
-                      ),
-                    )}
+                    {[
+                      ["Name", ""],
+                      ["Company", "hidden lg:table-cell"],
+                      ["Email", "hidden xl:table-cell"],
+                      ["Phone", "hidden 2xl:table-cell"],
+                      ["Source", "hidden md:table-cell"],
+                      ["Status", ""],
+                      ["Value", "hidden sm:table-cell"],
+                      ["Assigned To", "hidden xl:table-cell"],
+                      ["Date", "hidden 2xl:table-cell"],
+                      ["Actions", ""],
+                    ].map(([h, cls]) => (
+                      <th key={h} className={`px-3 py-3 ${cls}`}>
+                        {h}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
@@ -161,23 +184,26 @@ export default function Leads() {
                     const meta = statusMeta(l.status);
                     return (
                       <tr key={l._id} className="border-t border-slate-100 hover:bg-slate-50/60 text-slate-700">
-                        <td className="px-4 py-4 font-semibold text-slate-900">{l.name}</td>
-                        <td className="px-4 py-4">{l.company || "-"}</td>
-                        <td className="px-4 py-4">
+                        <td className="px-3 py-3 font-semibold text-slate-900">
+                          {l.name}
+                          <span className="block text-[13px] font-normal text-slate-500 xl:hidden truncate max-w-[14rem]">{l.email}</span>
+                        </td>
+                        <td className="px-3 py-3 hidden lg:table-cell">{l.company || "-"}</td>
+                        <td className="px-3 py-3 hidden xl:table-cell">
                           <span className="inline-flex items-center gap-2">
                             <Mail size={14} className="text-slate-400" /> {l.email}
                           </span>
                         </td>
-                        <td className="px-4 py-4">{l.phone || "-"}</td>
-                        <td className="px-4 py-4">{sourceLabel(l.source)}</td>
-                        <td className="px-4 py-4">
-                          <Badge className={meta.badge}>{meta.label}</Badge>
+                        <td className="px-3 py-3 hidden 2xl:table-cell">{l.phone || "-"}</td>
+                        <td className="px-3 py-3 hidden md:table-cell">{sourceLabel(l.source)}</td>
+                        <td className="px-3 py-3">
+                          <Badge className={`${meta.badge} !text-xs whitespace-nowrap`}>{meta.label}</Badge>
                         </td>
-                        <td className="px-4 py-4 font-bold text-slate-900">{fmtMoney(l.value)}</td>
-                        <td className="px-4 py-4">{l.assignedTo?.name || "-"}</td>
-                        <td className="px-4 py-4 whitespace-nowrap">{fmtDate(l.createdAt)}</td>
-                        <td className="px-4 py-4">
-                          <div className="flex gap-2">
+                        <td className="px-3 py-3 font-bold text-slate-900 hidden sm:table-cell">{fmtMoney(l.value)}</td>
+                        <td className="px-3 py-3 hidden xl:table-cell">{l.assignedTo?.name || "-"}</td>
+                        <td className="px-3 py-3 whitespace-nowrap hidden 2xl:table-cell">{fmtDate(l.createdAt)}</td>
+                        <td className="px-3 py-3">
+                          <div className="flex gap-1.5">
                             <IconButton onClick={() => navigate(`/leads/${l._id}`)} aria-label="View">
                               <Eye size={16} />
                             </IconButton>
@@ -204,6 +230,10 @@ export default function Leads() {
           <Pagination page={page} perPage={PER_PAGE} total={shown.length} onChange={setPage} />
         </div>
       </div>
+
+      {drawerOpen && (
+        <LeadDrawer key={editId || "new"} leadId={editId} onClose={closeDrawer} onSaved={onSaved} />
+      )}
     </Layout>
   );
 }

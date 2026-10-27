@@ -10,9 +10,9 @@ import { fmtDate, toDateInput } from "../utils/format";
 import { can } from "../utils/permissions";
 
 const input =
-  "w-full border border-slate-300 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-[#2b1247]";
+  "w-full border border-slate-300 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-brand";
 const primaryBtn =
-  "rounded-xl bg-[#2b1247] px-5 py-2.5 text-white transition hover:bg-[#23163a] disabled:opacity-60";
+  "rounded-xl bg-brand px-5 py-2.5 text-white transition hover:bg-brand-hover disabled:opacity-60";
 
 const toRows = (list = []) =>
   list.map((e) => ({

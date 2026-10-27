@@ -177,7 +177,7 @@ export default function FinancePayments() {
 
       <PaymentModal open={open} onClose={() => setOpen(false)} onSaved={load} openInvoices={options.openInvoices} />
 
-      <Modal
+      <Modal center
         open={!!toDelete}
         title="Delete payment"
         onClose={() => setToDelete(null)}

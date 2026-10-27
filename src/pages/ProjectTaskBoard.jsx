@@ -206,7 +206,7 @@ export default function ProjectTaskBoard() {
         onClose={() => setModal(null)}
       />
 
-      <Modal
+      <Modal center
         open={!!toDelete}
         title="Delete task"
         onClose={() => setToDelete(null)}

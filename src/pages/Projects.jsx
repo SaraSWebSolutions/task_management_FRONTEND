@@ -332,7 +332,7 @@ export default function Projects() {
         </div>
       </Modal>
 
-      <Modal
+      <Modal center
         open={!!toDelete}
         title="Delete project"
         onClose={() => setToDelete(null)}

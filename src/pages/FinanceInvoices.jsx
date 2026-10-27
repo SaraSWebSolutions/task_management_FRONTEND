@@ -447,7 +447,7 @@ export default function FinanceInvoices() {
 
       <PaymentModal open={!!payFor} invoiceId={payFor || ""} onClose={() => setPayFor(null)} onSaved={load} openInvoices={options.openInvoices} />
 
-      <Modal
+      <Modal center
         open={!!toDelete}
         title="Delete invoice"
         onClose={() => setToDelete(null)}

@@ -327,7 +327,7 @@ export default function MyWork() {
         </div>
       </Modal>
 
-      <Modal
+      <Modal center
         open={!!toDelete}
         title="Delete task"
         onClose={() => setToDelete(null)}

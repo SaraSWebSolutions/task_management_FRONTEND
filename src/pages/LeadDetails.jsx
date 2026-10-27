@@ -7,9 +7,9 @@ import MarketingTime from "../components/MarketingTime";
 import toast from "react-hot-toast";
 
 const input =
-  "w-full border border-slate-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#2b1247]";
+  "w-full border border-slate-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-brand";
 const primaryBtn =
-  "rounded-xl bg-[#2b1247] px-5 py-3 text-white transition hover:bg-[#23163a] disabled:opacity-60";
+  "rounded-xl bg-brand px-5 py-3 text-white transition hover:bg-brand-hover disabled:opacity-60";
 
 const nice = (s) =>
   s ? s.charAt(0) + s.slice(1).toLowerCase().replaceAll("_", " ") : "-";
@@ -231,7 +231,7 @@ export default function LeadDetails() {
                     <a
                       href={lead.spendDoc}
                       download={lead.spendDocName || "expense-copy"}
-                      className="mt-2 inline-flex items-center gap-2 text-sm text-[#2b1247] underline"
+                      className="mt-2 inline-flex items-center gap-2 text-sm text-brand underline"
                     >
                       <FileText size={16} /> {lead.spendDocName || "Saved copy"}
                     </a>

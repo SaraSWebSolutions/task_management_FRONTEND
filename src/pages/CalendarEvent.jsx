@@ -158,7 +158,7 @@ export default function CalendarEvent() {
       </div>
 
       <EventModal open={edit} event={e} day={dayKey(e.start)} onClose={() => setEdit(false)} onSaved={load} />
-      <Modal open={confirm} title="Delete event" onClose={() => setConfirm(false)} footer={<><GhostButton onClick={() => setConfirm(false)}>Cancel</GhostButton><DangerButton onClick={remove}>Delete</DangerButton></>}>
+      <Modal center open={confirm} title="Delete event" onClose={() => setConfirm(false)} footer={<><GhostButton onClick={() => setConfirm(false)}>Cancel</GhostButton><DangerButton onClick={remove}>Delete</DangerButton></>}>
         <p className="text-slate-600">Delete <strong>{e.title}</strong>?{recurring ? " This removes every repeat of it." : ""}{e.attendees.length ? " Invited people are told it was cancelled." : ""}</p>
       </Modal>
     </Layout>

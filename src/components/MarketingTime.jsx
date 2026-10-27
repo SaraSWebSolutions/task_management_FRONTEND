@@ -4,7 +4,7 @@ import api from "../api/axios";
 import toast from "react-hot-toast";
 
 const input =
-  "w-full border border-slate-300 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-[#2b1247]";
+  "w-full border border-slate-300 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-brand";
 const today = () => new Date().toISOString().slice(0, 10);
 const money = (n) =>
   `₹${Number(n || 0).toLocaleString("en-IN", { maximumFractionDigits: 0 })}`;
@@ -161,7 +161,7 @@ export default function MarketingTime({ lead, users, onSaved }) {
       <button
         disabled={saving}
         onClick={save}
-        className="rounded-xl bg-[#2b1247] px-5 py-2.5 text-white transition hover:bg-[#23163a] disabled:opacity-60"
+        className="rounded-xl bg-brand px-5 py-2.5 text-white transition hover:bg-brand-hover disabled:opacity-60"
       >
         Save
       </button>

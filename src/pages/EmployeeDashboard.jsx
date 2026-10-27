@@ -307,7 +307,7 @@
 //                   onClick={() => setCurrentPage(index + 1)}
 //                   className={`w-10 h-10 rounded-xl font-medium transition ${
 //                     currentPage === index + 1
-//                       ? "bg-[#2b1247] text-white shadow-md"
+//                       ? "bg-brand text-white shadow-md"
 //                       : "bg-white border border-slate-300 text-slate-700 hover:bg-slate-100"
 //                   }`}
 //                 >
@@ -668,7 +668,7 @@ export default function EmployeeDashboard() {
                     onClick={() => setCurrentPage(index + 1)}
                     className={`w-10 h-10 rounded-xl font-medium transition ${
                       currentPage === index + 1
-                        ? "bg-[#2b1247] text-white shadow-md"
+                        ? "bg-brand text-white shadow-md"
                         : "bg-white border border-slate-300 text-slate-700 hover:bg-slate-100"
                     }`}
                   >

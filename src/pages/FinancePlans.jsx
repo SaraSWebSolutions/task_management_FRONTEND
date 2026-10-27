@@ -232,7 +232,7 @@ export default function FinancePlans() {
         </div>
       </Modal>
 
-      <Modal
+      <Modal center
         open={!!toDelete}
         title="Delete plan"
         onClose={() => setToDelete(null)}

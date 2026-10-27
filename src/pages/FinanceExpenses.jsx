@@ -309,7 +309,7 @@ export default function FinanceExpenses() {
         </div>
       </Modal>
 
-      <Modal
+      <Modal center
         open={!!toDelete}
         title="Delete expense"
         onClose={() => setToDelete(null)}

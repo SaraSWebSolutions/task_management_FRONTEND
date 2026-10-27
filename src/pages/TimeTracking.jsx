@@ -249,7 +249,7 @@ export default function TimeTracking() {
         </div>
       </Modal>
 
-      <Modal
+      <Modal center
         open={!!toDelete}
         title="Delete time entry"
         onClose={() => setToDelete(null)}

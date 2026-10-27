@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { X, Loader2, ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { avatarColor, initials } from "../../utils/format";
+import Drawer from "../Drawer";
 
 export function PageHeader({ title, subtitle, breadcrumbs, actions }) {
   return (
@@ -148,22 +149,34 @@ export function EmptyState({ children }) {
   return <div className="py-12 text-center text-slate-500">{children}</div>;
 }
 
-export function Modal({ open, title, onClose, children, footer, wide = false }) {
+// Forms open as a right-side slide-over drawer. Pass `center` for small confirm dialogs.
+export function Modal({ open, title, onClose, children, footer, wide = false, center = false }) {
   useEffect(() => {
-    if (!open) return;
+    if (!open || !center) return;
     const onKey = (e) => e.key === "Escape" && onClose();
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
+  }, [open, center, onClose]);
 
   if (!open) return null;
 
+  if (!center) {
+    return (
+      <Drawer
+        title={title}
+        onClose={onClose}
+        footer={footer}
+        width={wide ? "sm:max-w-[820px]" : "sm:max-w-[600px]"}
+      >
+        {children}
+      </Drawer>
+    );
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div
-        className={`relative w-full ${wide ? "max-w-3xl" : "max-w-xl"} max-h-[90vh] flex flex-col bg-white rounded-2xl shadow-xl text-left`}
-      >
+      <div className="drawer-backdrop absolute inset-0 bg-slate-900/40 backdrop-blur-[2px]" onClick={onClose} />
+      <div className="relative w-full max-w-md max-h-[90vh] flex flex-col bg-white rounded-2xl shadow-xl text-left">
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
           <div role="heading" aria-level={3} className="text-lg font-semibold text-slate-900">
             {title}

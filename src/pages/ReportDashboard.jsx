@@ -7,9 +7,9 @@ import { money } from "./Projects";
 import { LEAD_SOURCES, sourceLabel } from "../constants/leadSources";
 
 const input =
-  "w-full border border-slate-300 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-[#2b1247]";
+  "w-full border border-slate-300 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-brand";
 const primaryBtn =
-  "rounded-xl bg-[#2b1247] px-5 py-2.5 text-white transition hover:bg-[#23163a] disabled:opacity-60";
+  "rounded-xl bg-brand px-5 py-2.5 text-white transition hover:bg-brand-hover disabled:opacity-60";
 
 const thisMonth = () => new Date().toISOString().slice(0, 7);
 const pct = (a, b) => (b > 0 ? Math.round((a / b) * 100) : 0);
@@ -111,7 +111,7 @@ export default function ReportDashboard() {
             type="month"
             value={month}
             onChange={(e) => setMonth(e.target.value)}
-            className="border border-slate-300 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-[#2b1247]"
+            className="border border-slate-300 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-brand"
           />
         </div>
 
@@ -164,7 +164,7 @@ export default function ReportDashboard() {
                   </div>
                   <div className="h-3 rounded-full bg-slate-100 overflow-hidden">
                     <div
-                      className="h-full rounded-full bg-[#2b1247]"
+                      className="h-full rounded-full bg-brand"
                       style={{ width: `${Math.min(100, pct(actualValue, targetValue))}%` }}
                     />
                   </div>

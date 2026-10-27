@@ -289,12 +289,12 @@ export default function Campaigns() {
         </div>
       </Modal>
 
-      <Modal open={confirm} title="Send email" onClose={() => setConfirm(false)} footer={<><GhostButton disabled={busy === "send"} onClick={() => setConfirm(false)}>Cancel</GhostButton><PrimaryButton disabled={busy === "send"} onClick={send}>{busy === "send" ? "Sending..." : `Send to ${emails.length}`}</PrimaryButton></>}>
+      <Modal center open={confirm} title="Send email" onClose={() => setConfirm(false)} footer={<><GhostButton disabled={busy === "send"} onClick={() => setConfirm(false)}>Cancel</GhostButton><PrimaryButton disabled={busy === "send"} onClick={send}>{busy === "send" ? "Sending..." : `Send to ${emails.length}`}</PrimaryButton></>}>
         <p className="text-slate-600">Send <strong>{form.title}</strong> to <strong>{emails.length}</strong> recipient{emails.length === 1 ? "" : "s"}? This can&apos;t be undone.{emails.length > 10 ? " Large lists take a little while. Keep this window open." : ""}</p>
       </Modal>
 
       {/* Lead picker */}
-      <Modal open={picker} title="Add recipients from leads" onClose={() => setPicker(false)} footer={<><GhostButton onClick={() => setPicker(false)}>Cancel</GhostButton><PrimaryButton disabled={!chosen.length} onClick={addChosen}>Add {chosen.length || ""}</PrimaryButton></>}>
+      <Modal center open={picker} title="Add recipients from leads" onClose={() => setPicker(false)} footer={<><GhostButton onClick={() => setPicker(false)}>Cancel</GhostButton><PrimaryButton disabled={!chosen.length} onClick={addChosen}>Add {chosen.length || ""}</PrimaryButton></>}>
         <div className="space-y-4">
           <div className="grid sm:grid-cols-2 gap-4">
             <select value={filter.status} onChange={(e) => loadLeads({ ...filter, status: e.target.value })} className={inputClass}>{LEAD_STATUS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>

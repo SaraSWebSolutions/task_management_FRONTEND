@@ -291,7 +291,7 @@ export default function FinanceSubscriptions() {
         </div>
       </Modal>
 
-      <Modal
+      <Modal center
         open={!!toDelete}
         title="Delete subscription"
         onClose={() => setToDelete(null)}

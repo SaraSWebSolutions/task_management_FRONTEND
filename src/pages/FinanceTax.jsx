@@ -212,7 +212,7 @@ export default function FinanceTax() {
         </div>
       </Modal>
 
-      <Modal
+      <Modal center
         open={!!toDelete}
         title="Remove tax rate"
         onClose={() => setToDelete(null)}

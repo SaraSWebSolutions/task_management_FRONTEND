@@ -179,7 +179,7 @@ export default function ProjectTaskList() {
 
       <ProjectTaskModal open={!!modal} task={modal?.task} defaults={modal?.defaults} options={options} saving={saving} onSave={save} onClose={() => setModal(null)} />
 
-      <Modal
+      <Modal center
         open={!!toDelete}
         title="Delete task"
         onClose={() => setToDelete(null)}

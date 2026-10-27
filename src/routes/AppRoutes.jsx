@@ -4,6 +4,8 @@ import ProtectedRoute from "../components/ProtectedRoute";
 import PermissionRoute from "../components/PermissionRoute";
 
 import Login from "../pages/Login";
+import ForgotPassword from "../pages/ForgotPassword";
+import ResetPassword from "../pages/ResetPassword";
 import Profile from "../pages/Profile";
 import MyWork from "../pages/MyWork";
 import Dashboard from "../pages/Dashboard";
@@ -66,6 +68,8 @@ const AppRoutes = () => {
     <Routes>
       {/* Login */}
       <Route path="/" element={<Login />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password/:token" element={<ResetPassword />} />
       {/* Protected Routes */}
       <Route
         path="/profile"

@@ -1,6 +1,6 @@
 // Right-side slide-over panel (used for Add / Edit forms).
 // Full width on phones, ~640px on larger screens. Esc / backdrop click closes it.
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { X } from "lucide-react";
 
 export default function Drawer({
@@ -11,8 +11,13 @@ export default function Drawer({
   footer,
   width = "sm:max-w-[640px]",
 }) {
+  const closeRef = useRef(onClose);
   useEffect(() => {
-    const onKey = (e) => e.key === "Escape" && onClose();
+    closeRef.current = onClose;
+  });
+
+  useEffect(() => {
+    const onKey = (e) => e.key === "Escape" && closeRef.current();
     document.addEventListener("keydown", onKey);
 
     const prev = document.body.style.overflow;
@@ -22,7 +27,7 @@ export default function Drawer({
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = prev || "auto";
     };
-  }, [onClose]);
+  }, []);
 
   return (
     <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label={title}>

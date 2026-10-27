@@ -206,7 +206,7 @@ export default function Milestones() {
         </div>
       </Modal>
 
-      <Modal
+      <Modal center
         open={!!toDelete}
         title="Delete milestone"
         onClose={() => setToDelete(null)}
