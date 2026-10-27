@@ -88,9 +88,9 @@ export default function Layout({ children }) {
           sidebarVisible ? "lg:ml-64" : "lg:ml-20"
         }`}
       >
-        <div className="h-26 px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+        <div className="h-16 sm:h-20 lg:h-26 px-3 sm:px-6 lg:px-8 flex items-center justify-between gap-2">
           {/* Left Section */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 sm:gap-4 min-w-0">
             <button
               onClick={toggleSidebar}
               className="h-10 w-10 flex items-center justify-center rounded-xl border border-slate-200 bg-white hover:bg-slate-100 transition"
@@ -109,7 +109,7 @@ export default function Layout({ children }) {
           </div>
 
           {/* Right Section */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <button onClick={() => setSearchOpen(true)} aria-label="Quick search" className="md:hidden h-10 w-10 flex items-center justify-center rounded-xl border border-slate-200 bg-white hover:bg-slate-100 transition"><Search size={19} /></button>
             <button onClick={() => setSearchOpen(true)} aria-label="Open command search" title="Quick search (Ctrl+K)" className="hidden md:flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white hover:bg-slate-100 transition"><SquareTerminal size={19} /></button>
             <NotificationBell />
@@ -118,7 +118,7 @@ export default function Layout({ children }) {
             )}
 
             {/* User Profile */}
-            <div className="relative border-l border-slate-200 pl-4" ref={menuRef}>
+            <div className="relative border-l border-slate-200 pl-2 sm:pl-4" ref={menuRef}>
               <button onClick={() => setMenuOpen((o) => !o)} className="flex items-center gap-3 rounded-xl hover:bg-slate-50 pr-1" aria-haspopup="menu" aria-expanded={menuOpen}>
                 <div className="hidden sm:block text-right">
                   <p className="text-sm font-semibold text-slate-800 capitalize">
@@ -129,13 +129,13 @@ export default function Layout({ children }) {
                   </p>
                 </div>
 
-                <div className="h-12 w-12 rounded-full bg-linear-to-br from-violet-500 to-fuchsia-500 text-white flex items-center justify-center font-semibold shadow-md overflow-hidden">
+                <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-linear-to-br from-violet-500 to-fuchsia-500 text-white flex items-center justify-center font-semibold shadow-md overflow-hidden">
                   {user?.profileImage ? <img src={user.profileImage} alt="" className="h-full w-full object-cover" /> : user?.name?.charAt(0)?.toUpperCase() || <User size={18} />}
                 </div>
               </button>
 
               {menuOpen && (
-                <div role="menu" className="absolute right-0 mt-3 w-56 rounded-2xl border border-slate-200 bg-white shadow-xl p-2 z-50">
+                <div role="menu" className="absolute right-0 mt-3 w-56 max-w-[calc(100vw-1.5rem)] rounded-2xl border border-slate-200 bg-white shadow-xl p-2 z-50">
                   <Link role="menuitem" to="/profile" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-700 hover:bg-slate-50"><UserCircle size={18} /> My Profile</Link>
                   <Link role="menuitem" to="/notifications" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-700 hover:bg-slate-50"><Bell size={18} /> Notifications</Link>
                   <Link role="menuitem" to="/calendar" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-700 hover:bg-slate-50"><CalendarDays size={18} /> Calendar</Link>
@@ -150,7 +150,7 @@ export default function Layout({ children }) {
 
       {/* Main Content */}
       <main
-        className={`min-h-screen p-4 sm:p-6 lg:p-8 transition-all duration-300 ${
+        className={`min-h-screen p-3 sm:p-6 lg:p-8 transition-all duration-300 min-w-0 ${
           sidebarVisible ? "lg:ml-64" : "lg:ml-20"
         }`}
       >

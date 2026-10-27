@@ -1,0 +1,141 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1000" preserveAspectRatio="xMidYMid slice" font-family="Inter, Arial, Helvetica, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b1020"/>
+      <stop offset="0.55" stop-color="#1c0f45"/>
+      <stop offset="1" stop-color="#0a2a45"/>
+    </linearGradient>
+    <linearGradient id="bar" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#7c3aed"/>
+      <stop offset="1" stop-color="#e879f9"/>
+    </linearGradient>
+    <linearGradient id="active" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#7c3aed"/>
+      <stop offset="1" stop-color="#c026d3"/>
+    </linearGradient>
+    <linearGradient id="area" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2dd4bf" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#2dd4bf" stop-opacity="0"/>
+    </linearGradient>
+    <pattern id="dots" width="36" height="36" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.6" fill="#ffffff" fill-opacity="0.09"/>
+    </pattern>
+    <filter id="blur" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="70"/></filter>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="170%">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="1000" fill="url(#bg)"/>
+  <rect width="1200" height="1000" fill="url(#dots)"/>
+  <circle cx="160" cy="120" r="230" fill="#d946ef" fill-opacity="0.35" filter="url(#blur)"/>
+  <circle cx="1080" cy="260" r="210" fill="#38bdf8" fill-opacity="0.28" filter="url(#blur)"/>
+  <circle cx="300" cy="820" r="240" fill="#14b8a6" fill-opacity="0.28" filter="url(#blur)"/>
+  <circle cx="980" cy="800" r="200" fill="#7c3aed" fill-opacity="0.40" filter="url(#blur)"/>
+
+  <!-- dashboard window -->
+  <g transform="translate(150,130)">
+    <rect width="900" height="520" rx="28" fill="#ffffff" fill-opacity="0.07" stroke="#ffffff" stroke-opacity="0.22" filter="url(#shadow)"/>
+    <circle cx="36" cy="34" r="6" fill="#fb7185"/><circle cx="58" cy="34" r="6" fill="#fbbf24"/><circle cx="80" cy="34" r="6" fill="#34d399"/>
+    <rect x="130" y="24" width="240" height="20" rx="10" fill="#fff" fill-opacity="0.12"/>
+    <rect x="0" y="64" width="170" height="456" fill="#fff" fill-opacity="0.04"/>
+    <line x1="0" y1="64" x2="900" y2="64" stroke="#fff" stroke-opacity="0.1"/>
+
+    <!-- sidebar items -->
+    <rect x="18" y="92" width="134" height="36" rx="12" fill="url(#active)"/>
+    <circle cx="38" cy="110" r="7" fill="#fff" fill-opacity="0.9"/><rect x="56" y="104" width="70" height="12" rx="6" fill="#fff" fill-opacity="0.9"/>
+    <g fill="#fff" fill-opacity="0.35">
+      <circle cx="38" cy="160" r="7"/><rect x="56" y="154" width="80" height="12" rx="6"/>
+      <circle cx="38" cy="208" r="7"/><rect x="56" y="202" width="62" height="12" rx="6"/>
+      <circle cx="38" cy="256" r="7"/><rect x="56" y="250" width="88" height="12" rx="6"/>
+      <circle cx="38" cy="304" r="7"/><rect x="56" y="298" width="70" height="12" rx="6"/>
+      <circle cx="38" cy="352" r="7"/><rect x="56" y="346" width="76" height="12" rx="6"/>
+    </g>
+
+    <!-- heading -->
+    <rect x="200" y="92" width="210" height="18" rx="9" fill="#fff" fill-opacity="0.6"/>
+    <rect x="200" y="120" width="140" height="10" rx="5" fill="#fff" fill-opacity="0.22"/>
+
+    <!-- stat tiles -->
+    <g>
+      <rect x="200" y="156" width="210" height="84" rx="16" fill="#fff" fill-opacity="0.08"/>
+      <rect x="218" y="174" width="70" height="9" rx="4.5" fill="#fff" fill-opacity="0.3"/>
+      <text x="218" y="218" font-size="26" font-weight="700" fill="#fff">128</text>
+      <rect x="338" y="206" width="52" height="8" rx="4" fill="#a78bfa"/>
+
+      <rect x="433" y="156" width="210" height="84" rx="16" fill="#fff" fill-opacity="0.08"/>
+      <rect x="451" y="174" width="70" height="9" rx="4.5" fill="#fff" fill-opacity="0.3"/>
+      <text x="451" y="218" font-size="26" font-weight="700" fill="#fff">94</text>
+      <rect x="571" y="206" width="52" height="8" rx="4" fill="#2dd4bf"/>
+
+      <rect x="666" y="156" width="210" height="84" rx="16" fill="#fff" fill-opacity="0.08"/>
+      <rect x="684" y="174" width="70" height="9" rx="4.5" fill="#fff" fill-opacity="0.3"/>
+      <text x="684" y="218" font-size="26" font-weight="700" fill="#fff">12</text>
+      <rect x="804" y="206" width="52" height="8" rx="4" fill="#fbbf24"/>
+    </g>
+
+    <!-- chart panel -->
+    <rect x="200" y="262" width="400" height="230" rx="18" fill="#fff" fill-opacity="0.07"/>
+    <rect x="220" y="282" width="110" height="10" rx="5" fill="#fff" fill-opacity="0.4"/>
+    <g fill="url(#bar)">
+      <rect x="226" y="400" width="28" height="70" rx="8"/>
+      <rect x="268" y="370" width="28" height="100" rx="8"/>
+      <rect x="310" y="410" width="28" height="60" rx="8"/>
+      <rect x="352" y="340" width="28" height="130" rx="8"/>
+      <rect x="394" y="380" width="28" height="90" rx="8"/>
+      <rect x="436" y="330" width="28" height="140" rx="8"/>
+      <rect x="478" y="360" width="28" height="110" rx="8"/>
+      <rect x="520" y="310" width="28" height="160" rx="8"/>
+    </g>
+    <path d="M226 400 C 280 340, 330 380, 366 330 S 450 300, 492 330 S 540 270, 560 280 L560 470 L226 470 Z" fill="url(#area)"/>
+    <path d="M226 400 C 280 340, 330 380, 366 330 S 450 300, 492 330 S 540 270, 560 280" fill="none" stroke="#2dd4bf" stroke-width="4" stroke-linecap="round"/>
+
+    <!-- task list panel -->
+    <rect x="624" y="262" width="252" height="230" rx="18" fill="#fff" fill-opacity="0.07"/>
+    <rect x="644" y="282" width="90" height="10" rx="5" fill="#fff" fill-opacity="0.4"/>
+    <g>
+      <circle cx="656" cy="326" r="10" fill="#34d399"/><path d="M651 326 l4 4 l7 -8" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="678" y="321" width="120" height="10" rx="5" fill="#fff" fill-opacity="0.55"/><circle cx="846" cy="326" r="11" fill="#f472b6"/>
+
+      <circle cx="656" cy="372" r="10" fill="#34d399"/><path d="M651 372 l4 4 l7 -8" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="678" y="367" width="96" height="10" rx="5" fill="#fff" fill-opacity="0.55"/><circle cx="846" cy="372" r="11" fill="#fbbf24"/>
+
+      <circle cx="656" cy="418" r="10" fill="none" stroke="#a78bfa" stroke-width="2.5"/>
+      <rect x="678" y="413" width="110" height="10" rx="5" fill="#fff" fill-opacity="0.35"/><circle cx="846" cy="418" r="11" fill="#38bdf8"/>
+
+      <circle cx="656" cy="464" r="10" fill="none" stroke="#a78bfa" stroke-width="2.5"/>
+      <rect x="678" y="459" width="84" height="10" rx="5" fill="#fff" fill-opacity="0.35"/><circle cx="846" cy="464" r="11" fill="#a78bfa"/>
+    </g>
+  </g>
+
+  <!-- floating: completion card -->
+  <g transform="translate(870,80)" filter="url(#shadow)">
+    <rect width="236" height="104" rx="24" fill="#fff"/>
+    <circle cx="56" cy="52" r="28" fill="none" stroke="#e2e8f0" stroke-width="8"/>
+    <circle cx="56" cy="52" r="28" fill="none" stroke="#7c3aed" stroke-width="8" stroke-linecap="round" stroke-dasharray="176" stroke-dashoffset="32" transform="rotate(-90 56 52)"/>
+    <text x="56" y="58" font-size="16" font-weight="700" fill="#1e293b" text-anchor="middle">82%</text>
+    <text x="106" y="44" font-size="14" fill="#94a3b8">This week</text>
+    <text x="106" y="68" font-size="17" font-weight="700" fill="#1e293b">Tasks done</text>
+  </g>
+
+  <!-- floating: team card -->
+  <g transform="translate(90,600)" filter="url(#shadow)">
+    <rect width="250" height="112" rx="24" fill="#fff"/>
+    <text x="24" y="38" font-size="14" fill="#94a3b8">Team online</text>
+    <circle cx="36" cy="68" r="15" fill="#fb7185" stroke="#fff" stroke-width="3"/>
+    <circle cx="62" cy="68" r="15" fill="#fbbf24" stroke="#fff" stroke-width="3"/>
+    <circle cx="88" cy="68" r="15" fill="#38bdf8" stroke="#fff" stroke-width="3"/>
+    <circle cx="114" cy="68" r="15" fill="#34d399" stroke="#fff" stroke-width="3"/>
+    <text x="114" y="73" font-size="12" font-weight="700" fill="#065f46" text-anchor="middle">+8</text>
+    <text x="150" y="74" font-size="17" font-weight="700" fill="#1e293b">12 members</text>
+  </g>
+
+  <!-- floating: deadline chip -->
+  <g transform="translate(790,640)" filter="url(#shadow)">
+    <rect width="270" height="64" rx="32" fill="#fff"/>
+    <circle cx="36" cy="32" r="16" fill="#fef3c7"/>
+    <circle cx="36" cy="32" r="7" fill="none" stroke="#d97706" stroke-width="2.5"/>
+    <path d="M36 27 v5 l3 2" stroke="#d97706" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <text x="64" y="38" font-size="16" font-weight="700" fill="#1e293b">3 deadlines today</text>
+  </g>
+</svg>

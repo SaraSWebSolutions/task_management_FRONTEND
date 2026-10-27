@@ -2,9 +2,7 @@ import { useState } from "react";
 import {
   LayoutDashboard,
   ClipboardList,
-  LogOut,
   User,
-  Loader2,
   Building2,
   Mail,
   FolderKanban,
@@ -17,7 +15,7 @@ import {
   ChartColumn,
   CalendarDays,
 } from "lucide-react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import logo from "../assets/logo.png";
 import favlogo from "../assets/favicon.png";
 import { canAny } from "../utils/permissions";
@@ -32,7 +30,8 @@ const USER_GROUP = {
       to: "/users",
       text: "All Users",
       perm: "users.view",
-      match: (p) => p === "/users" || (p.startsWith("/users/") && p !== "/users/add"),
+      match: (p) =>
+        p === "/users" || (p.startsWith("/users/") && p !== "/users/add"),
     },
     { to: "/users/add", text: "Add User", perm: "users.create" },
     { to: "/roles", text: "Roles & Permissions", perm: "roles.view" },
@@ -89,7 +88,11 @@ const FINANCE_GROUP = {
     { to: "/finance/expenses", text: "Expenses", perm: "expenses.view" },
     { to: "/finance/invoices", text: "Invoices", perm: "invoices.view" },
     { to: "/finance/payments", text: "Payments", perm: "payments.view" },
-    { to: "/finance/subscriptions", text: "Subscriptions", perm: "subscriptions.view" },
+    {
+      to: "/finance/subscriptions",
+      text: "Subscriptions",
+      perm: "subscriptions.view",
+    },
     { to: "/finance/plans", text: "Plans & Pricing", perm: "plans.view" },
     { to: "/finance/tax", text: "Tax Settings", perm: "tax.view" },
     { to: "/finance/reports", text: "Reports", perm: "finance.view" },
@@ -102,10 +105,22 @@ const ANALYTICS_GROUP = {
   icon: ChartColumn,
   children: [
     { to: "/analytics/sales", text: "Sales Reports", perm: "analytics.view" },
-    { to: "/analytics/revenue", text: "Revenue Reports", perm: "analytics.view" },
+    {
+      to: "/analytics/revenue",
+      text: "Revenue Reports",
+      perm: "analytics.view",
+    },
     { to: "/analytics/users", text: "User Reports", perm: "analytics.view" },
-    { to: "/analytics/performance", text: "Performance", perm: "analytics.view" },
-    { to: "/analytics/lead-sources", text: "Lead Sources", perm: "analytics.view" },
+    {
+      to: "/analytics/performance",
+      text: "Performance",
+      perm: "analytics.view",
+    },
+    {
+      to: "/analytics/lead-sources",
+      text: "Lead Sources",
+      perm: "analytics.view",
+    },
     { to: "/analytics/conversion", text: "Conversion", perm: "analytics.view" },
     { to: "/analytics/custom", text: "Custom Reports", perm: "analytics.view" },
     { to: "/analytics/export", text: "Export Data", perm: "analytics.export" },
@@ -119,7 +134,11 @@ const DASHBOARD_GROUP = {
   children: [
     { to: "/dashboard", text: "Default" },
     { to: "/crm-dashboard", text: "CRM", perm: "leads.view" },
-    { to: "/pm/dashboard", text: "Project Management", perm: ["projects.view", "projecttasks.view"] },
+    {
+      to: "/pm/dashboard",
+      text: "Project Management",
+      perm: ["projects.view", "projecttasks.view"],
+    },
     { to: "/finance/dashboard", text: "Finance", perm: "finance.view" },
   ],
 };
@@ -138,10 +157,20 @@ const SECTIONS = [
     label: "Apps & Modules",
     items: [
       { group: USER_GROUP },
-      { to: "/clients", text: "Clients", icon: Building2, perm: "clients.view" },
+      {
+        to: "/clients",
+        text: "Clients",
+        icon: Building2,
+        perm: "clients.view",
+      },
       { group: CRM_GROUP },
       { group: PROJECT_GROUP },
-      { to: "/campaigns", text: "Campaigns", icon: Mail, perm: "campaigns.view" },
+      {
+        to: "/campaigns",
+        text: "Campaigns",
+        icon: Mail,
+        perm: "campaigns.view",
+      },
     ],
   },
   {
@@ -150,7 +179,12 @@ const SECTIONS = [
       { group: FINANCE_GROUP },
       { group: ANALYTICS_GROUP },
       { to: "/reports", text: "Reports", icon: FileText, perm: "reports.view" },
-      { to: "/target-dashboard", text: "Target Dashboard", icon: Target, perm: "reports.view" },
+      {
+        to: "/target-dashboard",
+        text: "Target Dashboard",
+        icon: Target,
+        perm: "reports.view",
+      },
     ],
   },
 ];
@@ -161,29 +195,18 @@ export default function Sidebar({
   onCloseMobile = () => {},
   onNavigate = () => {},
 }) {
-  const [logoutLoading, setLogoutLoading] = useState(false);
   const [openGroups, setOpenGroups] = useState({});
 
   const user = JSON.parse(localStorage.getItem("user"));
   const isAdmin = user?.role === "ADMIN";
 
   const location = useLocation();
-  const navigate = useNavigate();
   const path = location.pathname;
 
-  const logout = async () => {
-    setLogoutLoading(true);
-
-    setTimeout(() => {
-      localStorage.clear();
-      navigate("/");
-      onNavigate();
-      setLogoutLoading(false);
-    }, 800);
-  };
-
   const isActive = (item) =>
-    item.match ? item.match(path) : path === item.to || path.startsWith(`${item.to}/`);
+    item.match
+      ? item.match(path)
+      : path === item.to || path.startsWith(`${item.to}/`);
 
   const desktopWidth = visible ? "lg:w-64" : "lg:w-20";
 
@@ -192,8 +215,19 @@ export default function Sidebar({
   const sections = SECTIONS.map((s) => ({
     label: s.label,
     items: s.items
-      .map((m) => (m.group ? { ...m.group, children: m.group.children.filter((c) => allowed(c.perm)) } : m))
-      .filter((m) => (m.children ? m.children.length > 0 : allowed(m.perm) && !(m.staffOnly && isAdmin))),
+      .map((m) =>
+        m.group
+          ? {
+              ...m.group,
+              children: m.group.children.filter((c) => allowed(c.perm)),
+            }
+          : m,
+      )
+      .filter((m) =>
+        m.children
+          ? m.children.length > 0
+          : allowed(m.perm) && !(m.staffOnly && isAdmin),
+      ),
   })).filter((s) => s.items.length > 0);
 
   const renderLink = (item) => (
@@ -234,15 +268,22 @@ export default function Sidebar({
           type="button"
           onClick={() => setOpenGroups((s) => ({ ...s, [g.key]: !open }))}
           className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-[15px] font-medium transition ${
-            childActive ? "bg-brand-soft text-brand-hover font-semibold" : "text-slate-600 hover:bg-slate-50"
+            childActive
+              ? "bg-brand-soft text-brand-hover font-semibold"
+              : "text-slate-600 hover:bg-slate-50"
           }`}
         >
           <Icon size={20} />
           <span className="flex-1 text-left">{g.text}</span>
           {g.key === "dashboard" && (
-            <span className="h-6 min-w-6 px-1.5 rounded-full bg-brand text-white text-xs font-bold flex items-center justify-center">{g.children.length}</span>
+            <span className="h-6 min-w-6 px-1.5 rounded-full bg-brand text-white text-xs font-bold flex items-center justify-center">
+              {g.children.length}
+            </span>
           )}
-          <ChevronDown size={16} className={`transition-transform ${open ? "rotate-180" : ""}`} />
+          <ChevronDown
+            size={16}
+            className={`transition-transform ${open ? "rotate-180" : ""}`}
+          />
         </button>
 
         {open && (
@@ -255,7 +296,9 @@ export default function Sidebar({
                   to={c.to}
                   onClick={onNavigate}
                   className={`flex items-center gap-4 pl-8 pr-4 py-2.5 rounded-xl text-sm transition ${
-                    active ? "bg-brand-soft text-brand-hover font-semibold" : "text-slate-600 hover:bg-slate-50"
+                    active
+                      ? "bg-brand-soft text-brand-hover font-semibold"
+                      : "text-slate-600 hover:bg-slate-50"
                   }`}
                 >
                   <span
@@ -275,7 +318,10 @@ export default function Sidebar({
     <>
       {/* Mobile Overlay */}
       {mobileOpen && (
-        <div className="fixed inset-0 bg-black/40 z-30 lg:hidden" onClick={onCloseMobile} />
+        <div
+          className="fixed inset-0 bg-black/40 z-30 lg:hidden"
+          onClick={onCloseMobile}
+        />
       )}
 
       <aside
@@ -326,37 +372,15 @@ export default function Sidebar({
                   {s.label}
                 </p>
               )}
-              {s.items.map((m) => (m.children ? renderGroup(m) : renderLink(m)))}
+              {s.items.map((m) =>
+                m.children ? renderGroup(m) : renderLink(m),
+              )}
             </div>
           ))}
 
           <div className="mt-2">
             {renderLink({ to: "/profile", text: "Profile", icon: User })}
           </div>
-        </div>
-
-        {/* Logout Fixed Bottom */}
-        <div className="shrink-0 border-t bg-white p-3">
-          <button
-            onClick={logout}
-            disabled={logoutLoading}
-            className={`w-full flex items-center justify-center gap-2 rounded-xl py-3 font-medium transition
-              ${visible ? "bg-red-50 text-red-600 hover:bg-red-100" : "text-red-600 hover:bg-red-50"}
-              ${logoutLoading ? "opacity-70 cursor-not-allowed" : ""}
-              `}
-          >
-            {logoutLoading ? (
-              <>
-                <Loader2 size={18} className="animate-spin" />
-                {visible && <span>Logging out...</span>}
-              </>
-            ) : (
-              <>
-                <LogOut size={18} />
-                {visible && <span>Logout</span>}
-              </>
-            )}
-          </button>
         </div>
       </aside>
     </>

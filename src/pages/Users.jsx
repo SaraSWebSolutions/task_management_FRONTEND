@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   Search,
   UserPlus,
@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import Layout from "../components/Layout";
+import UserDrawer from "../components/users/UserDrawer";
 import api from "../api/axios";
 import {
   PageHeader,
@@ -60,7 +61,13 @@ function Select({ value, onChange, children, className = "" }) {
 
 export default function Users() {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const { id: editId } = useParams();
   const me = getUser();
+
+  // /users/add and /users/:id/edit open the slide-over drawer on top of this list.
+  const adding = pathname.replace(/\/+$/, "") === "/users/add";
+  const drawerOpen = adding || Boolean(editId);
 
   const [users, setUsers] = useState([]);
   const [stats, setStats] = useState(null);
@@ -80,6 +87,11 @@ export default function Users() {
   const [working, setWorking] = useState(false);
 
   const reload = useCallback(() => setReloadKey((k) => k + 1), []);
+  const closeDrawer = useCallback(() => navigate("/users"), [navigate]);
+  const onSaved = useCallback(() => {
+    navigate("/users");
+    setReloadKey((k) => k + 1);
+  }, [navigate]);
 
   useEffect(() => {
     api
@@ -211,9 +223,40 @@ export default function Users() {
   const from = pagination.total === 0 ? 0 : (pagination.page - 1) * PAGE_SIZE + 1;
   const to = Math.min(pagination.page * PAGE_SIZE, pagination.total);
 
+  const actionButtons = (u, isMe) => (
+    <>
+      <button
+        onClick={() => navigate(`/users/${u._id}`)}
+        className="h-8 w-9 rounded-lg border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 flex items-center justify-center"
+        title="View"
+      >
+        <Eye size={15} />
+      </button>
+      {canEdit && (
+        <button
+          onClick={() => navigate(`/users/${u._id}/edit`)}
+          className="h-8 w-9 rounded-lg bg-brand text-white hover:bg-brand-hover flex items-center justify-center"
+          title="Edit"
+        >
+          <Pencil size={15} />
+        </button>
+      )}
+      {canDelete && (
+        <button
+          onClick={() => remove(u)}
+          disabled={isMe}
+          className="h-8 w-9 rounded-lg bg-red-500 text-white hover:bg-red-600 flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed"
+          title={isMe ? "You cannot delete yourself" : "Delete"}
+        >
+          <Trash2 size={15} />
+        </button>
+      )}
+    </>
+  );
+
   return (
     <Layout>
-      <div className="space-y-6 text-left">
+      <div className="space-y-5 sm:space-y-6 text-left">
         <PageHeader
           title="All Users"
           breadcrumbs={[
@@ -230,7 +273,7 @@ export default function Users() {
           }
         />
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 min-[420px]:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-5">
           <StatCard label="Total Users" value={stats?.total ?? "-"} icon={<UsersIcon size={28} />} tone="indigo" />
           <StatCard label="Active Users" value={stats?.active ?? "-"} icon={<UserCheck size={28} />} tone="green" />
           <StatCard label="Inactive Users" value={stats?.inactive ?? "-"} icon={<UserX size={28} />} tone="red" />
@@ -238,69 +281,77 @@ export default function Users() {
         </div>
 
         {/* Filters */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-5 flex flex-col xl:flex-row gap-3 xl:items-center">
+        <div className="bg-white rounded-2xl border border-slate-200 p-3 sm:p-4 flex flex-col gap-3 xl:flex-row xl:items-center">
           <div className="relative flex-1 min-w-0">
             <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search users by name or email..."
-              className={`${inputClass} pl-11`}
+              className={`${inputClass} !py-2.5 pl-11`}
             />
           </div>
 
-          <Select
-            className="xl:w-48"
-            value={role}
-            onChange={(e) => {
-              setRole(e.target.value);
-              setPage(1);
-            }}
-          >
-            <option value="">All Roles</option>
-            {roles.map((r) => (
-              <option key={r.key} value={r.key}>
-                {r.name}
-              </option>
-            ))}
-          </Select>
+          <div className="grid grid-cols-2 sm:grid-cols-3 xl:flex gap-3">
+            <Select
+              className="xl:w-44"
+              value={role}
+              onChange={(e) => {
+                setRole(e.target.value);
+                setPage(1);
+              }}
+            >
+              <option value="">All Roles</option>
+              {roles.map((r) => (
+                <option key={r.key} value={r.key}>
+                  {r.name}
+                </option>
+              ))}
+            </Select>
 
-          <Select
-            className="xl:w-48"
-            value={status}
-            onChange={(e) => {
-              setStatus(e.target.value);
-              setPage(1);
-            }}
-          >
-            <option value="">All Status</option>
-            <option value="ACTIVE">Active</option>
-            <option value="INACTIVE">Inactive</option>
-          </Select>
+            <Select
+              className="xl:w-40"
+              value={status}
+              onChange={(e) => {
+                setStatus(e.target.value);
+                setPage(1);
+              }}
+            >
+              <option value="">All Status</option>
+              <option value="ACTIVE">Active</option>
+              <option value="INACTIVE">Inactive</option>
+            </Select>
+
+            <GhostButton onClick={exportCsv} className="!py-2.5 col-span-2 sm:col-span-1">
+              <Download size={18} /> Export
+            </GhostButton>
+          </div>
 
           {(canEdit || canDelete) && (
-            <div className="flex gap-3">
-              <Select className="w-44" value={bulk} onChange={(e) => setBulk(e.target.value)}>
+            <div className="grid grid-cols-[1fr_auto] gap-3 xl:flex">
+              <Select className="xl:w-44" value={bulk} onChange={(e) => setBulk(e.target.value)}>
                 <option value="">Bulk Actions</option>
                 {canEdit && <option value="activate">Activate</option>}
                 {canEdit && <option value="deactivate">Deactivate</option>}
                 {canDelete && <option value="delete">Delete</option>}
               </Select>
-              <GhostButton onClick={applyBulk} disabled={!bulk || selected.length === 0 || working}>
+              <GhostButton onClick={applyBulk} disabled={!bulk || selected.length === 0 || working} className="!py-2.5">
                 {working ? "Applying..." : "Apply"}
               </GhostButton>
             </div>
           )}
-
-          <GhostButton onClick={exportCsv} className="xl:ml-auto">
-            <Download size={18} /> Export
-          </GhostButton>
         </div>
 
-        {/* Table */}
+        {/* List */}
         <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-          <div className="px-6 py-5 border-b border-slate-100 text-lg font-semibold text-slate-900">
-            Users ({pagination.total})
+          <div className="px-4 sm:px-6 py-4 border-b border-slate-100 text-base font-semibold text-slate-900 flex items-center justify-between gap-3">
+            <span>Users ({pagination.total})</span>
+            {users.length > 0 && (
+              <label className="md:hidden flex items-center gap-2 text-sm font-normal text-slate-500">
+                <input type="checkbox" checked={allSelected} onChange={toggleAll} className="h-4 w-4 accent-brand" />
+                Select all
+              </label>
+            )}
           </div>
 
           {loading ? (
@@ -308,110 +359,130 @@ export default function Users() {
           ) : users.length === 0 ? (
             <EmptyState>No users match your filters.</EmptyState>
           ) : (
-            <div className="overflow-x-auto px-4 pb-2">
-              <table className="w-full min-w-[980px]">
-                <thead>
-                  <tr className="bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                    <th className="p-4 text-left w-12">
-                      <input
-                        type="checkbox"
-                        checked={allSelected}
-                        onChange={toggleAll}
-                        className="h-4 w-4 accent-brand"
-                        aria-label="Select all"
-                      />
-                    </th>
-                    <th className="p-4 text-left">User</th>
-                    <th className="p-4 text-left">Email</th>
-                    <th className="p-4 text-left">Role</th>
-                    <th className="p-4 text-left">Status</th>
-                    <th className="p-4 text-left">Join Date</th>
-                    <th className="p-4 text-left">Last Login</th>
-                    <th className="p-4 text-left">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {users.map((u) => {
-                    const isMe = String(u._id) === String(me?._id);
-                    const active = u.status !== "INACTIVE";
-                    return (
-                      <tr key={u._id} className="border-b border-slate-100 last:border-0 text-left">
-                        <td className="p-4">
-                          <input
-                            type="checkbox"
-                            checked={selected.includes(u._id)}
-                            onChange={() => toggleOne(u._id)}
-                            className="h-4 w-4 accent-brand"
-                            aria-label={`Select ${u.name}`}
-                          />
-                        </td>
-                        <td className="p-4">
-                          <div className="flex items-center gap-3">
-                            <Avatar name={u.name} src={u.profileImage} size="h-12 w-12" text="text-base" />
-                            <div className="min-w-0">
-                              <p className="font-semibold text-slate-900 truncate">
-                                {u.name}
-                                {isMe && <span className="ml-2 text-xs font-normal text-slate-400">(you)</span>}
-                              </p>
-                              <p className="text-sm text-slate-500 truncate">{u.department || u.designation || "-"}</p>
+            <>
+              {/* Phones: card list */}
+              <ul className="md:hidden divide-y divide-slate-100">
+                {users.map((u) => {
+                  const isMe = String(u._id) === String(me?._id);
+                  const active = u.status !== "INACTIVE";
+                  return (
+                    <li key={u._id} className="p-4 text-left">
+                      <div className="flex items-start gap-3">
+                        <input
+                          type="checkbox"
+                          checked={selected.includes(u._id)}
+                          onChange={() => toggleOne(u._id)}
+                          className="mt-3 h-4 w-4 shrink-0 accent-brand"
+                          aria-label={`Select ${u.name}`}
+                        />
+                        <Avatar name={u.name} src={u.profileImage} size="h-11 w-11" text="text-sm" />
+                        <div className="min-w-0 flex-1">
+                          <p className="font-semibold text-slate-900 truncate">
+                            {u.name}
+                            {isMe && <span className="ml-2 text-xs font-normal text-slate-400">(you)</span>}
+                          </p>
+                          <p className="text-[13px] text-slate-500 truncate">{u.email}</p>
+                          <div className="mt-2 flex flex-wrap items-center gap-2">
+                            <Badge className="bg-violet-100 text-violet-700 !text-xs">{roleName(u.roleKey)}</Badge>
+                            <Badge className={`${active ? "bg-emerald-100 text-emerald-600" : "bg-slate-200 text-slate-600"} !text-xs`}>
+                              {active ? "Active" : "Inactive"}
+                            </Badge>
+                          </div>
+                          <p className="mt-2 text-xs text-slate-400">
+                            {u.department || u.designation || "-"} · Joined {fmtDate(u.joinDate)} · {timeAgo(u.lastLoginAt)}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="mt-3 flex justify-end gap-2">{actionButtons(u, isMe)}</div>
+                    </li>
+                  );
+                })}
+              </ul>
+
+              {/* Tablet / desktop: compact table that fits the window */}
+              <div className="hidden md:block">
+                <table className="w-full table-auto">
+                  <thead>
+                    <tr className="bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                      <th className="px-4 py-3 text-left w-10">
+                        <input
+                          type="checkbox"
+                          checked={allSelected}
+                          onChange={toggleAll}
+                          className="h-4 w-4 accent-brand"
+                          aria-label="Select all"
+                        />
+                      </th>
+                      <th className="px-3 py-3 text-left">User</th>
+                      <th className="px-3 py-3 text-left hidden lg:table-cell">Email</th>
+                      <th className="px-3 py-3 text-left">Role</th>
+                      <th className="px-3 py-3 text-left">Status</th>
+                      <th className="px-3 py-3 text-left hidden xl:table-cell">Join Date</th>
+                      <th className="px-3 py-3 text-left hidden 2xl:table-cell">Last Login</th>
+                      <th className="px-3 py-3 text-left">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {users.map((u) => {
+                      const isMe = String(u._id) === String(me?._id);
+                      const active = u.status !== "INACTIVE";
+                      return (
+                        <tr key={u._id} className="border-b border-slate-100 last:border-0 text-left hover:bg-slate-50/60">
+                          <td className="px-4 py-3">
+                            <input
+                              type="checkbox"
+                              checked={selected.includes(u._id)}
+                              onChange={() => toggleOne(u._id)}
+                              className="h-4 w-4 accent-brand"
+                              aria-label={`Select ${u.name}`}
+                            />
+                          </td>
+                          <td className="px-3 py-3">
+                            <div className="flex items-center gap-3">
+                              <Avatar name={u.name} src={u.profileImage} size="h-10 w-10" text="text-sm" />
+                              <div className="min-w-0 max-w-[14rem]">
+                                <p className="font-semibold text-slate-900 truncate">
+                                  {u.name}
+                                  {isMe && <span className="ml-2 text-xs font-normal text-slate-400">(you)</span>}
+                                </p>
+                                <p className="text-[13px] text-slate-500 truncate">
+                                  <span className="lg:hidden">{u.email}</span>
+                                  <span className="hidden lg:inline">{u.department || u.designation || "-"}</span>
+                                </p>
+                              </div>
                             </div>
-                          </div>
-                        </td>
-                        <td className="p-4 text-slate-700">{u.email}</td>
-                        <td className="p-4">
-                          <Badge className="bg-violet-100 text-violet-700">{roleName(u.roleKey)}</Badge>
-                        </td>
-                        <td className="p-4">
-                          <Badge className={active ? "bg-emerald-100 text-emerald-600" : "bg-slate-200 text-slate-600"}>
-                            {active ? "Active" : "Inactive"}
-                          </Badge>
-                        </td>
-                        <td className="p-4 text-slate-700">{fmtDate(u.joinDate)}</td>
-                        <td className="p-4 text-slate-700">{timeAgo(u.lastLoginAt)}</td>
-                        <td className="p-4">
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => navigate(`/users/${u._id}`)}
-                              className="h-9 w-11 rounded-lg border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 flex items-center justify-center"
-                              title="View"
-                            >
-                              <Eye size={16} />
-                            </button>
-                            {canEdit && (
-                              <button
-                                onClick={() => navigate(`/users/${u._id}/edit`)}
-                                className="h-9 w-11 rounded-lg bg-brand text-white hover:bg-brand-hover flex items-center justify-center"
-                                title="Edit"
-                              >
-                                <Pencil size={16} />
-                              </button>
-                            )}
-                            {canDelete && (
-                              <button
-                                onClick={() => remove(u)}
-                                disabled={isMe}
-                                className="h-9 w-11 rounded-lg bg-red-500 text-white hover:bg-red-600 flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed"
-                                title={isMe ? "You cannot delete yourself" : "Delete"}
-                              >
-                                <Trash2 size={16} />
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                          </td>
+                          <td className="px-3 py-3 text-slate-700 hidden lg:table-cell">
+                            <span className="block max-w-[15rem] truncate" title={u.email}>{u.email}</span>
+                          </td>
+                          <td className="px-3 py-3">
+                            <Badge className="bg-violet-100 text-violet-700 !text-xs whitespace-nowrap">{roleName(u.roleKey)}</Badge>
+                          </td>
+                          <td className="px-3 py-3">
+                            <Badge className={`${active ? "bg-emerald-100 text-emerald-600" : "bg-slate-200 text-slate-600"} !text-xs`}>
+                              {active ? "Active" : "Inactive"}
+                            </Badge>
+                          </td>
+                          <td className="px-3 py-3 text-slate-700 whitespace-nowrap hidden xl:table-cell">{fmtDate(u.joinDate)}</td>
+                          <td className="px-3 py-3 text-slate-700 whitespace-nowrap hidden 2xl:table-cell">{timeAgo(u.lastLoginAt)}</td>
+                          <td className="px-3 py-3">
+                            <div className="flex gap-1.5">{actionButtons(u, isMe)}</div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
 
           {!loading && pagination.total > 0 && (
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t border-slate-100 px-6 py-5">
-              <span className="text-slate-600">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t border-slate-100 px-4 sm:px-6 py-4">
+              <span className="text-sm text-slate-600">
                 Showing {from} to {to} of {pagination.total} entries
               </span>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => setPage((p) => p - 1)}
                   disabled={page <= 1}
@@ -446,6 +517,10 @@ export default function Users() {
           )}
         </div>
       </div>
+
+      {drawerOpen && (
+        <UserDrawer key={editId || "new"} userId={editId} onClose={closeDrawer} onSaved={onSaved} />
+      )}
     </Layout>
   );
 }
