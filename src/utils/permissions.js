@@ -25,6 +25,11 @@ export const can = (perm) =>
 
 export const canAny = (...perms) => perms.some(can);
 
+// { perm, also }: needs ANY of `perm`, and (when given) ANY of `also` as well.
+// Used where the server checks two things, e.g. analytics.view + the data it summarises.
+export const canAccess = ({ perm, also } = {}) =>
+  (!perm || canAny(...[].concat(perm))) && (!also || canAny(...[].concat(also)));
+
 // Pulls the caller's current permissions from the server (throttled to 30s).
 export async function refreshPermissions({ force = false } = {}) {
   const last = Number(sessionStorage.getItem("permissionsAt") || 0);
@@ -48,6 +53,20 @@ export async function refreshPermissions({ force = false } = {}) {
 
 // Where "Home" in breadcrumbs, and sign-in, should go. Everyone has the same
 // dashboard; each card on it only shows data the person is allowed to see.
-export const landingPath = () => "/dashboard";
+// First page this person is actually allowed to open (Profile is always open).
+const LANDING = [
+  ["dashboard.view", "/dashboard"],
+  ["mywork.view", "/my-work"],
+  ["calendar.view", "/calendar"],
+  ["leads.view", "/leads"],
+  ["projects.view", "/projects"],
+  ["projecttasks.view", "/pm/tasks"],
+  ["clients.view", "/clients"],
+  ["finance.view", "/finance/dashboard"],
+  ["users.view", "/users"],
+  ["campaigns.view", "/campaigns"],
+];
+
+export const landingPath = () => (LANDING.find(([p]) => can(p)) || [, "/profile"])[1];
 
 export const homePath = () => landingPath();

@@ -84,9 +84,9 @@ const AppRoutes = () => {
       <Route
         path="/my-work"
         element={
-          <ProtectedRoute>
+          <PermissionRoute perm="mywork.view">
             <MyWork />
-          </ProtectedRoute>
+          </PermissionRoute>
         }
       />
       <Route path="/employee" element={<Navigate to="/dashboard" replace />} />
@@ -104,10 +104,10 @@ const AppRoutes = () => {
       <Route path="/campaigns/add" element={<Navigate to="/campaigns" replace />} />
       <Route path="/campaigns/:id" element={<Navigate to="/campaigns" replace />} />
       <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
-      <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
-      <Route path="/calendar/event/:id" element={<ProtectedRoute><CalendarEvent /></ProtectedRoute>} />
+      <Route path="/calendar" element={<PermissionRoute perm="calendar.view"><Calendar /></PermissionRoute>} />
+      <Route path="/calendar/event/:id" element={<PermissionRoute perm="calendar.view"><CalendarEvent /></PermissionRoute>} />
       {/* One dashboard for everyone; each card only appears if the person may see that data */}
-      <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+      <Route path="/dashboard" element={<PermissionRoute perm="dashboard.view"><Dashboard /></PermissionRoute>} />
       <Route path="/admin" element={<Navigate to="/dashboard" replace />} />
       <Route
         path="/finance/dashboard"
@@ -217,9 +217,9 @@ const AppRoutes = () => {
       <Route
         path="/campaigns"
         element={
-          <ProtectedRoute>
+          <PermissionRoute perm="campaigns.view">
             <Campaigns />
-          </ProtectedRoute>
+          </PermissionRoute>
         }
       />
       <Route
@@ -410,7 +410,7 @@ const AppRoutes = () => {
       <Route
         path="/analytics/sales"
         element={
-          <PermissionRoute perm="analytics.view">
+          <PermissionRoute perm="analytics.view" also={["finance.view", "invoices.view"]}>
             <AnalyticsSales />
           </PermissionRoute>
         }
@@ -418,7 +418,7 @@ const AppRoutes = () => {
       <Route
         path="/analytics/revenue"
         element={
-          <PermissionRoute perm="analytics.view">
+          <PermissionRoute perm="analytics.view" also="finance.view">
             <AnalyticsRevenue />
           </PermissionRoute>
         }
@@ -426,7 +426,7 @@ const AppRoutes = () => {
       <Route
         path="/analytics/users"
         element={
-          <PermissionRoute perm="analytics.view">
+          <PermissionRoute perm="analytics.view" also={["users.view", "employees.view"]}>
             <AnalyticsUsers />
           </PermissionRoute>
         }
@@ -434,7 +434,7 @@ const AppRoutes = () => {
       <Route
         path="/analytics/performance"
         element={
-          <PermissionRoute perm="analytics.view">
+          <PermissionRoute perm="analytics.view" also={["projecttasks.view", "projects.view"]}>
             <AnalyticsPerformance />
           </PermissionRoute>
         }
@@ -442,7 +442,7 @@ const AppRoutes = () => {
       <Route
         path="/analytics/lead-sources"
         element={
-          <PermissionRoute perm="analytics.view">
+          <PermissionRoute perm="analytics.view" also="leads.view">
             <AnalyticsLeadSources />
           </PermissionRoute>
         }
@@ -450,7 +450,7 @@ const AppRoutes = () => {
       <Route
         path="/analytics/conversion"
         element={
-          <PermissionRoute perm="analytics.view">
+          <PermissionRoute perm="analytics.view" also={["leads.view", "deals.view"]}>
             <AnalyticsConversion />
           </PermissionRoute>
         }
@@ -466,7 +466,7 @@ const AppRoutes = () => {
       <Route
         path="/analytics/export"
         element={
-          <PermissionRoute perm="analytics.export">
+          <PermissionRoute perm="analytics.export" also="analytics.view">
             <AnalyticsExport />
           </PermissionRoute>
         }

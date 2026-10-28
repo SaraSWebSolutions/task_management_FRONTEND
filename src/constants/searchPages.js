@@ -1,11 +1,11 @@
 // Pages offered by the Ctrl+K search. `perm` can be one key or a list (any of them).
 export const SEARCH_PAGES = [
-  { text: "Dashboard", to: "/dashboard", group: "Dashboard", words: "home overview" },
+  { text: "Dashboard", to: "/dashboard", group: "Dashboard", perm: "dashboard.view", words: "home overview" },
   { text: "CRM Dashboard", to: "/crm-dashboard", group: "Dashboard", perm: "leads.view", words: "leads sales" },
   { text: "Project Dashboard", to: "/pm/dashboard", group: "Dashboard", perm: ["projects.view", "projecttasks.view"] },
   { text: "Finance Dashboard", to: "/finance/dashboard", group: "Dashboard", perm: "finance.view", words: "money cash" },
-  { text: "My Work", to: "/my-work", group: "Work", words: "tasks time log" },
-  { text: "Calendar", to: "/calendar", group: "Work", words: "events meetings schedule" },
+  { text: "My Work", to: "/my-work", group: "Work", perm: "mywork.view", words: "tasks time log" },
+  { text: "Calendar", to: "/calendar", group: "Work", perm: "calendar.view", words: "events meetings schedule" },
   { text: "Notifications", to: "/notifications", group: "Work", words: "alerts reminders" },
   { text: "My Profile", to: "/profile", group: "Work", words: "account password photo" },
 
@@ -38,14 +38,14 @@ export const SEARCH_PAGES = [
   { text: "Tax Settings", to: "/finance/tax", group: "Finance", perm: "tax.view", words: "gst" },
   { text: "Finance Reports", to: "/finance/reports", group: "Finance", perm: "finance.view", words: "profit loss" },
 
-  { text: "Sales Reports", to: "/analytics/sales", group: "Analytics", perm: "analytics.view" },
-  { text: "Revenue Reports", to: "/analytics/revenue", group: "Analytics", perm: "analytics.view", words: "forecast mrr" },
-  { text: "User Reports", to: "/analytics/users", group: "Analytics", perm: "analytics.view" },
-  { text: "Performance", to: "/analytics/performance", group: "Analytics", perm: "analytics.view" },
-  { text: "Lead Sources", to: "/analytics/lead-sources", group: "Analytics", perm: "analytics.view" },
-  { text: "Conversion", to: "/analytics/conversion", group: "Analytics", perm: "analytics.view", words: "funnel" },
+  { text: "Sales Reports", to: "/analytics/sales", group: "Analytics", perm: "analytics.view", also: ["finance.view", "invoices.view"] },
+  { text: "Revenue Reports", to: "/analytics/revenue", group: "Analytics", perm: "analytics.view", also: "finance.view", words: "forecast mrr" },
+  { text: "User Reports", to: "/analytics/users", group: "Analytics", perm: "analytics.view", also: ["users.view", "employees.view"] },
+  { text: "Performance", to: "/analytics/performance", group: "Analytics", perm: "analytics.view", also: ["projecttasks.view", "projects.view"] },
+  { text: "Lead Sources", to: "/analytics/lead-sources", group: "Analytics", perm: "analytics.view", also: "leads.view" },
+  { text: "Conversion", to: "/analytics/conversion", group: "Analytics", perm: "analytics.view", also: ["leads.view", "deals.view"], words: "funnel" },
   { text: "Custom Reports", to: "/analytics/custom", group: "Analytics", perm: "analytics.view" },
-  { text: "Export Data", to: "/analytics/export", group: "Analytics", perm: "analytics.export", words: "csv excel download" },
+  { text: "Export Data", to: "/analytics/export", group: "Analytics", perm: "analytics.export", also: "analytics.view", words: "csv excel download" },
   { text: "Reports", to: "/reports", group: "Analytics", perm: "reports.view" },
   { text: "Target Dashboard", to: "/target-dashboard", group: "Analytics", perm: "reports.view" },
 ];

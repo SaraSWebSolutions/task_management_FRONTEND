@@ -2,14 +2,15 @@ import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import {
-  canAny,
+  canAccess,
+  landingPath,
   getPermissions,
   isAdmin,
   refreshPermissions,
 } from "../utils/permissions";
 
 // <PermissionRoute perm="users.view"> or perm={["a", "b"]} (any of them)
-export default function PermissionRoute({ perm, children }) {
+export default function PermissionRoute({ perm, also, children }) {
   const token = localStorage.getItem("token");
   const [ready, setReady] = useState(() => getPermissions() !== null || isAdmin());
 
@@ -30,9 +31,8 @@ export default function PermissionRoute({ perm, children }) {
     );
   }
 
-  const perms = Array.isArray(perm) ? perm : [perm];
-  if (!canAny(...perms)) {
-    return <Navigate to={isAdmin() ? "/admin" : "/employee"} replace />;
+  if (!canAccess({ perm, also })) {
+    return <Navigate to={landingPath()} replace />;
   }
 
   return children;

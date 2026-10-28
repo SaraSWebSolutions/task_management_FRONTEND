@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, CornerDownLeft } from "lucide-react";
 import { SEARCH_PAGES } from "../constants/searchPages";
-import { canAny } from "../utils/permissions";
+import { canAccess } from "../utils/permissions";
 
 // Ctrl+K (or Cmd+K) page search. Only pages the person is allowed to open are listed.
 export default function CommandPalette({ open, onClose }) {
@@ -12,7 +12,7 @@ export default function CommandPalette({ open, onClose }) {
   const list = useRef(null);
 
   const allowed = useMemo(
-    () => SEARCH_PAGES.filter((p) => !p.perm || canAny(...[].concat(p.perm))),
+    () => SEARCH_PAGES.filter((p) => canAccess(p)),
     // permissions can change while the app is open, so work it out each time it opens
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [open],

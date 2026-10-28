@@ -5,6 +5,7 @@ import Layout from "../components/Layout";
 import api from "../api/axios";
 import MarketingTime from "../components/MarketingTime";
 import toast from "react-hot-toast";
+import { can } from "../utils/permissions";
 
 const input =
   "w-full border border-slate-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-brand";
@@ -120,7 +121,9 @@ export default function LeadDetails() {
       </Layout>
     );
 
-  const closed = ["SALES", "PROJECT", "LOST"].includes(lead.status);
+  const canManage = can("leads.manage");
+  // view-only people see the lead but cannot change it
+  const closed = !canManage || ["SALES", "PROJECT", "LOST"].includes(lead.status);
   const isOffline = lead.demoType === "OFFLINE";
 
   return (
@@ -259,7 +262,8 @@ export default function LeadDetails() {
         )}
 
         {/* Quotation */}
-        {["NEW", "DEMO_SCHEDULED", "QUOTATION_SENT"].includes(lead.status) &&
+        {canManage &&
+          ["NEW", "DEMO_SCHEDULED", "QUOTATION_SENT"].includes(lead.status) &&
           (lead.requestType === "QUOTATION" || lead.status !== "NEW") && (
             <Card title="Quotation">
               {lead.quotationSentAt && (
@@ -284,7 +288,7 @@ export default function LeadDetails() {
           )}
 
         {/* Convert to sales */}
-        {["DEMO_SCHEDULED", "QUOTATION_SENT"].includes(lead.status) && (
+        {canManage && ["DEMO_SCHEDULED", "QUOTATION_SENT"].includes(lead.status) && (
           <Card title="Convert to sales">
             <p className="text-sm text-slate-600">
               Lead agreed? Move it to sales, then create the project.
@@ -306,7 +310,7 @@ export default function LeadDetails() {
         )}
 
         {/* Convert to project */}
-        {lead.status === "SALES" && (
+        {canManage && lead.status === "SALES" && (
           <Card title="Convert to project">
             <Field label="Project name *">
               <input

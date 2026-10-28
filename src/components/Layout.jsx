@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Menu, User, UserCircle, Bell, CalendarDays, LogOut, Search, SquareTerminal, Mail } from "lucide-react";
+import { Menu, User, UserCircle, Bell, CalendarDays, LogOut, Search, Mail } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import NotificationBell from "./notifications/NotificationBell";
@@ -111,7 +111,6 @@ export default function Layout({ children }) {
           {/* Right Section */}
           <div className="flex items-center gap-2 sm:gap-4">
             <button onClick={() => setSearchOpen(true)} aria-label="Quick search" className="md:hidden h-10 w-10 flex items-center justify-center rounded-xl border border-slate-200 bg-white hover:bg-slate-100 transition"><Search size={19} /></button>
-            <button onClick={() => setSearchOpen(true)} aria-label="Open command search" title="Quick search (Ctrl+K)" className="hidden md:flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white hover:bg-slate-100 transition"><SquareTerminal size={19} /></button>
             <NotificationBell />
             {can("campaigns.view") && (
               <Link to="/campaigns" aria-label="Email campaigns" title="Email campaigns" className="hidden sm:flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white hover:bg-slate-100 transition"><Mail size={19} /></Link>
@@ -138,7 +137,7 @@ export default function Layout({ children }) {
                 <div role="menu" className="absolute right-0 mt-3 w-56 max-w-[calc(100vw-1.5rem)] rounded-2xl border border-slate-200 bg-white shadow-xl p-2 z-50">
                   <Link role="menuitem" to="/profile" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-700 hover:bg-slate-50"><UserCircle size={18} /> My Profile</Link>
                   <Link role="menuitem" to="/notifications" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-700 hover:bg-slate-50"><Bell size={18} /> Notifications</Link>
-                  <Link role="menuitem" to="/calendar" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-700 hover:bg-slate-50"><CalendarDays size={18} /> Calendar</Link>
+                  {can("calendar.view") && <Link role="menuitem" to="/calendar" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-700 hover:bg-slate-50"><CalendarDays size={18} /> Calendar</Link>}
                   <div className="my-1 border-t border-slate-100" />
                   <button role="menuitem" onClick={signOut} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-red-600 hover:bg-red-50"><LogOut size={18} /> Sign Out</button>
                 </div>

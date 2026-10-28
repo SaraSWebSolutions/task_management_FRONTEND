@@ -7,7 +7,6 @@ import {
   Mail,
   FolderKanban,
   UserCog,
-  FileText,
   Target,
   ChevronDown,
   Briefcase,
@@ -18,7 +17,7 @@ import {
 import { Link, useLocation } from "react-router-dom";
 import logo from "../assets/logo.png";
 import favlogo from "../assets/favicon.png";
-import { canAny } from "../utils/permissions";
+import { canAccess } from "../utils/permissions";
 
 // Every item is gated by a permission; Admin passes all of them.
 const USER_GROUP = {
@@ -104,26 +103,52 @@ const ANALYTICS_GROUP = {
   text: "Reports & Analytics",
   icon: ChartColumn,
   children: [
-    { to: "/analytics/sales", text: "Sales Reports", perm: "analytics.view" },
+    // Same rule the server uses: analytics.view AND permission for the data behind the page
+    {
+      to: "/analytics/sales",
+      text: "Sales Reports",
+      perm: "analytics.view",
+      also: ["finance.view", "invoices.view"],
+    },
     {
       to: "/analytics/revenue",
       text: "Revenue Reports",
       perm: "analytics.view",
+      also: "finance.view",
     },
-    { to: "/analytics/users", text: "User Reports", perm: "analytics.view" },
+    {
+      to: "/analytics/users",
+      text: "User Reports",
+      perm: "analytics.view",
+      also: ["users.view", "employees.view"],
+    },
     {
       to: "/analytics/performance",
       text: "Performance",
       perm: "analytics.view",
+      also: ["projecttasks.view", "projects.view"],
     },
     {
       to: "/analytics/lead-sources",
       text: "Lead Sources",
       perm: "analytics.view",
+      also: "leads.view",
     },
-    { to: "/analytics/conversion", text: "Conversion", perm: "analytics.view" },
+    {
+      to: "/analytics/conversion",
+      text: "Conversion",
+      perm: "analytics.view",
+      also: ["leads.view", "deals.view"],
+    },
     { to: "/analytics/custom", text: "Custom Reports", perm: "analytics.view" },
-    { to: "/analytics/export", text: "Export Data", perm: "analytics.export" },
+    {
+      to: "/analytics/export",
+      text: "Export Data",
+      perm: "analytics.export",
+      also: "analytics.view",
+    },
+    // Date-wise quotation / employee reports live with the other reports
+    { to: "/reports", text: "Date-wise Reports", perm: "reports.view" },
   ],
 };
 
@@ -132,7 +157,7 @@ const DASHBOARD_GROUP = {
   text: "Dashboard",
   icon: LayoutDashboard,
   children: [
-    { to: "/dashboard", text: "Default" },
+    { to: "/dashboard", text: "Default", perm: "dashboard.view" },
     { to: "/crm-dashboard", text: "CRM", perm: "leads.view" },
     {
       to: "/pm/dashboard",
@@ -149,8 +174,19 @@ const SECTIONS = [
     label: "Main",
     items: [
       { group: DASHBOARD_GROUP },
-      { to: "/my-work", text: "My Work", icon: ClipboardList, staffOnly: true },
-      { to: "/calendar", text: "Calendar", icon: CalendarDays },
+      {
+        to: "/my-work",
+        text: "My Work",
+        icon: ClipboardList,
+        perm: "mywork.view",
+        staffOnly: true,
+      },
+      {
+        to: "/calendar",
+        text: "Calendar",
+        icon: CalendarDays,
+        perm: "calendar.view",
+      },
     ],
   },
   {
@@ -178,7 +214,6 @@ const SECTIONS = [
     items: [
       { group: FINANCE_GROUP },
       { group: ANALYTICS_GROUP },
-      { to: "/reports", text: "Reports", icon: FileText, perm: "reports.view" },
       {
         to: "/target-dashboard",
         text: "Target Dashboard",
@@ -211,7 +246,7 @@ export default function Sidebar({
   const desktopWidth = visible ? "lg:w-64" : "lg:w-20";
 
   // Work out what this person may see: a child or link with no `perm` is open to everyone.
-  const allowed = (perm) => !perm || canAny(...[].concat(perm));
+  const allowed = (item) => canAccess(item);
   const sections = SECTIONS.map((s) => ({
     label: s.label,
     items: s.items
@@ -219,14 +254,14 @@ export default function Sidebar({
         m.group
           ? {
               ...m.group,
-              children: m.group.children.filter((c) => allowed(c.perm)),
+              children: m.group.children.filter((c) => allowed(c)),
             }
           : m,
       )
       .filter((m) =>
         m.children
           ? m.children.length > 0
-          : allowed(m.perm) && !(m.staffOnly && isAdmin),
+          : allowed(m) && !(m.staffOnly && isAdmin),
       ),
   })).filter((s) => s.items.length > 0);
 

@@ -9,6 +9,7 @@ import { PageHeader, Card, Avatar, Spinner, EmptyState, Field, PrimaryButton, Gh
 import { KpiCard } from "../components/finance/bits";
 import { apiError } from "../components/finance/helpers";
 import { fmtDate, timeAgo } from "../utils/format";
+import { can } from "../utils/permissions";
 
 // Shrinks a chosen photo to a small square-ish JPEG so it stays well under the 2 MB limit
 const resizeImage = (file, max = 360) =>
@@ -138,7 +139,7 @@ export default function Profile() {
   return (
     <Layout>
       <div className="space-y-6">
-        <PageHeader title="My Profile" breadcrumbs={crumbs} actions={<><Link to="/notifications"><GhostButton><Bell size={18} /> Notifications</GhostButton></Link><Link to="/calendar"><GhostButton><CalendarRange size={18} /> Calendar</GhostButton></Link></>} />
+        <PageHeader title="My Profile" breadcrumbs={crumbs} actions={<><Link to="/notifications"><GhostButton><Bell size={18} /> Notifications</GhostButton></Link>{can("calendar.view") && <Link to="/calendar"><GhostButton><CalendarRange size={18} /> Calendar</GhostButton></Link>}</>} />
 
         <div className="grid gap-6 xl:grid-cols-3 items-start">
           {/* Left: who I am */}

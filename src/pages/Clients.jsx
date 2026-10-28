@@ -21,7 +21,7 @@ import {
   inputClass,
 } from "../components/ui";
 import { fmtDate, fmtMoney } from "../utils/format";
-import { homePath } from "../utils/permissions";
+import { can, homePath } from "../utils/permissions";
 
 const PER_PAGE = 8;
 
@@ -40,6 +40,7 @@ export default function Clients() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const { id: editId } = useParams();
+  const canManage = can("clients.manage");
 
   const [clients, setClients] = useState([]);
   const [search, setSearch] = useState("");
@@ -111,7 +112,7 @@ export default function Clients() {
 
   const payBadge = (c) => {
     const p = PAY[c.paymentStatus] || PAY.PENDING;
-    if (c.paymentStatus === "PAID") return <Badge className={`${p.cls} !text-xs`}>{p.label}</Badge>;
+    if (c.paymentStatus === "PAID" || !canManage) return <Badge className={`${p.cls} !text-xs`}>{p.label}</Badge>;
     return (
       <button type="button" onClick={() => setBillingClient(c)} title="Update billing">
         <Badge className={`${p.cls} !text-xs cursor-pointer hover:opacity-80 whitespace-nowrap`}>{p.label}</Badge>
@@ -119,7 +120,7 @@ export default function Clients() {
     );
   };
 
-  const actions = (c) => (
+  const actions = (c) => !canManage ? null : (
     <>
       <IconButton onClick={() => navigate(`/edit-client/${c._id}`)} aria-label="Edit client" title="Edit">
         <Pencil size={15} />
@@ -144,9 +145,11 @@ export default function Clients() {
             { label: "Clients" },
           ]}
           actions={
-            <PrimaryButton onClick={() => navigate("/add-client")}>
-              <Plus size={18} /> Add Client
-            </PrimaryButton>
+            canManage ? (
+              <PrimaryButton onClick={() => navigate("/add-client")}>
+                <Plus size={18} /> Add Client
+              </PrimaryButton>
+            ) : null
           }
         />
 

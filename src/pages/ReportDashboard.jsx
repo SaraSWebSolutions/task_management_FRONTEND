@@ -3,6 +3,7 @@ import { Trash2 } from "lucide-react";
 import Layout from "../components/Layout";
 import api from "../api/axios";
 import toast from "react-hot-toast";
+import { can } from "../utils/permissions";
 import { money } from "./Projects";
 import { LEAD_SOURCES, sourceLabel } from "../constants/leadSources";
 
@@ -41,6 +42,7 @@ const FUNNEL = [
 ];
 
 export default function ReportDashboard() {
+  const canManage = can("reports.manage");
   const [month, setMonth] = useState(thisMonth());
   const [data, setData] = useState(null);
   const [settings, setSettings] = useState(null);
@@ -209,6 +211,7 @@ export default function ReportDashboard() {
         </Card>
 
         {/* Targets + followers */}
+        {canManage && (
         <Card title="Targets and followers for this month">
           <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
             <label className="text-sm font-medium text-slate-700">
@@ -242,9 +245,11 @@ export default function ReportDashboard() {
             Save
           </button>
         </Card>
+        )}
 
         {/* Expenses */}
         <Card title="Marketing spend">
+          {canManage && (
           <div className="grid sm:grid-cols-[9rem_10rem_8rem_1fr_auto] gap-3">
             <input type="date" value={expense.date}
               onChange={(e) => setExpense((x) => ({ ...x, date: e.target.value }))} className={input} />
@@ -270,6 +275,7 @@ export default function ReportDashboard() {
               Add
             </button>
           </div>
+          )}
 
           {data.expenses.length > 0 && (
             <table className="w-full text-sm">
@@ -281,14 +287,14 @@ export default function ReportDashboard() {
                     <td className="p-3 text-slate-600">{e.note || "-"}</td>
                     <td className="p-3 text-right font-medium">{money(e.amount)}</td>
                     <td className="p-3 text-center w-14">
-                      <button
+                      {canManage && <button
                         onClick={() => {
                           if (window.confirm("Delete this expense?"))
                             run(() => api.delete(`/reports/expenses/${e._id}`), "Expense deleted");
                         }}
                         className="p-2 rounded-xl border border-red-200 text-red-600 hover:bg-red-50">
                         <Trash2 size={15} />
-                      </button>
+                      </button>}
                     </td>
                   </tr>
                 ))}

@@ -79,11 +79,13 @@ export default function Dashboard() {
     return d.finance.byMonth.slice(a, b);
   }, [d, quarter]);
 
+  const canSales = can("analytics.view") && (can("finance.view") || can("invoices.view"));
+
   const actions = [
     { label: "Add Lead", sub: "Capture a new enquiry", to: "/add-lead", perm: "leads.manage", icon: <UserPlus size={21} />, tint: "bg-violet-50 text-violet-500" },
     { label: "Create Invoice", sub: "Bill a client", to: "/finance/invoices", perm: "invoices.manage", icon: <FileText size={21} />, tint: "bg-emerald-50 text-emerald-500" },
-    { label: can("projecttasks.manage") ? "Assign Task" : "Add Task", sub: "Plan the work", to: can("projecttasks.manage") ? "/pm/tasks" : "/my-work", icon: <Plus size={21} />, tint: "bg-amber-50 text-amber-500" },
-    { label: "Add Event", sub: "Schedule a meeting", to: "/calendar", icon: <CalendarDays size={21} />, tint: "bg-cyan-50 text-cyan-500" },
+    { label: can("projecttasks.manage") ? "Assign Task" : "Add Task", sub: "Plan the work", to: can("projecttasks.manage") ? "/pm/tasks" : "/my-work", perm: can("projecttasks.manage") ? "projecttasks.manage" : "mywork.view", icon: <Plus size={21} />, tint: "bg-amber-50 text-amber-500" },
+    { label: "Add Event", sub: "Schedule a meeting", to: "/calendar", perm: "calendar.view", icon: <CalendarDays size={21} />, tint: "bg-cyan-50 text-cyan-500" },
     { label: "Email Campaign", sub: "Send to your leads", to: "/campaigns", perm: "campaigns.manage", icon: <Mail size={21} />, tint: "bg-pink-50 text-pink-500" },
     { label: "Manage Users", sub: "Team and access", to: "/users", perm: "users.view", icon: <Settings size={21} />, tint: "bg-slate-100 text-slate-500" },
   ].filter((a) => !a.perm || can(a.perm)).slice(0, 4);
@@ -123,7 +125,7 @@ export default function Dashboard() {
     d.crm?.followUpsDue ? { icon: <Users size={16} />, text: `${d.crm.followUpsDue} Follow-up${d.crm.followUpsDue > 1 ? "s" : ""} Due`, to: "/crm/follow-ups", tone: "amber" } : null,
     d.invoices?.overdue ? { icon: <TriangleAlert size={16} />, text: `${d.invoices.overdue} Overdue Invoice${d.invoices.overdue > 1 ? "s" : ""}`, to: "/finance/invoices", tone: "red" } : null,
     d.notifications.unread ? { icon: <Mail size={16} />, text: `${d.notifications.unread} Unread Notification${d.notifications.unread > 1 ? "s" : ""}`, to: "/notifications", tone: "violet" } : null,
-    d.mine.eventsToday ? { icon: <CalendarDays size={16} />, text: `${d.mine.eventsToday} Event${d.mine.eventsToday > 1 ? "s" : ""} Today`, to: "/calendar", tone: "cyan" } : null,
+    d.mine.eventsToday && can("calendar.view") ? { icon: <CalendarDays size={16} />, text: `${d.mine.eventsToday} Event${d.mine.eventsToday > 1 ? "s" : ""} Today`, to: "/calendar", tone: "cyan" } : null,
   ].filter(Boolean);
   const chipTone = { amber: "border-amber-200 bg-amber-50/60 text-amber-700", red: "border-red-200 bg-red-50/60 text-red-700", violet: "border-violet-200 bg-violet-50/60 text-violet-700", cyan: "border-cyan-200 bg-cyan-50/60 text-cyan-700" };
 
@@ -148,7 +150,7 @@ export default function Dashboard() {
             </div>
 
             <div className="mt-5 flex flex-wrap gap-3">
-              <PrimaryButton onClick={() => navigate(can("analytics.view") ? "/analytics/sales" : "/my-work")}>{can("analytics.view") ? "View Analytics" : "Open My Work"} <ArrowUpRight size={17} /></PrimaryButton>
+              {(canSales || can("mywork.view")) && <PrimaryButton onClick={() => navigate(canSales ? "/analytics/sales" : "/my-work")}>{canSales ? "View Analytics" : "Open My Work"} <ArrowUpRight size={17} /></PrimaryButton>}
               <GhostButton onClick={exportSummary}><FileText size={17} /> Download Report</GhostButton>
             </div>
           </div>
@@ -206,7 +208,7 @@ export default function Dashboard() {
               <div className="grid grid-cols-3 gap-4 text-center">
                 {[["Open", d.mine.open, "text-slate-900"], ["Due today", d.mine.dueToday, "text-amber-600"], ["Overdue", d.mine.overdue, "text-red-600"]].map(([l, v, c]) => <div key={l} className="rounded-2xl border border-slate-200 p-5"><p className={`text-4xl font-bold ${c}`}>{v}</p><p className="text-slate-500">{l}</p></div>)}
               </div>
-              <Link to="/my-work" className="mt-5 inline-flex items-center gap-2 font-semibold text-brand">Open My Work <ArrowUpRight size={16} /></Link>
+              {can("mywork.view") && <Link to="/my-work" className="mt-5 inline-flex items-center gap-2 font-semibold text-brand">Open My Work <ArrowUpRight size={16} /></Link>}
             </SectionCard>
           )}
         </div>

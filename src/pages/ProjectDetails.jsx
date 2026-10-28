@@ -26,6 +26,7 @@ const toRows = (list = []) =>
 
 // Editable list of "person + hours" rows. Used for the team and for support work.
 function EntryEditor({ title, rows, setRows, users, withNote, onSave, saving }) {
+  const canManage = can("projects.manage");
   const [pick, setPick] = useState("");
   const [hours, setHours] = useState("");
 
@@ -69,6 +70,7 @@ function EntryEditor({ title, rows, setRows, users, withNote, onSave, saving }) 
                       type="number"
                       min="0"
                       value={row.hours}
+                      disabled={!canManage}
                       onChange={(e) => change(i, "hours", e.target.value)}
                       className={input}
                     />
@@ -77,6 +79,7 @@ function EntryEditor({ title, rows, setRows, users, withNote, onSave, saving }) 
                     <td className="p-3">
                       <input
                         value={row.note}
+                        disabled={!canManage}
                         onChange={(e) => change(i, "note", e.target.value)}
                         placeholder="What was done"
                         className={input}
@@ -87,12 +90,14 @@ function EntryEditor({ title, rows, setRows, users, withNote, onSave, saving }) 
                     {row.rate == null ? "-" : money(row.rate * row.hours)}
                   </td>
                   <td className="p-3 text-center">
-                    <button
-                      onClick={() => setRows((r) => r.filter((_, idx) => idx !== i))}
-                      className="p-2 rounded-xl border border-red-200 text-red-600 hover:bg-red-50"
-                    >
-                      <Trash2 size={15} />
-                    </button>
+                    {canManage && (
+                      <button
+                        onClick={() => setRows((r) => r.filter((_, idx) => idx !== i))}
+                        className="p-2 rounded-xl border border-red-200 text-red-600 hover:bg-red-50"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -101,6 +106,7 @@ function EntryEditor({ title, rows, setRows, users, withNote, onSave, saving }) 
         </div>
       )}
 
+      {canManage && (
       <div className="flex flex-col sm:flex-row gap-3">
         <select value={pick} onChange={(e) => setPick(e.target.value)} className={input}>
           <option value="">Select person</option>
@@ -125,10 +131,13 @@ function EntryEditor({ title, rows, setRows, users, withNote, onSave, saving }) 
           <Plus size={16} /> Add
         </button>
       </div>
+      )}
 
-      <button disabled={saving} onClick={onSave} className={primaryBtn}>
-        Save
-      </button>
+      {canManage && (
+        <button disabled={saving} onClick={onSave} className={primaryBtn}>
+          Save
+        </button>
+      )}
     </div>
   );
 }
@@ -136,6 +145,7 @@ function EntryEditor({ title, rows, setRows, users, withNote, onSave, saving }) 
 export default function ProjectDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const canManage = can("projects.manage");
 
   const [project, setProject] = useState(null);
   const [users, setUsers] = useState([]);
@@ -293,11 +303,11 @@ export default function ProjectDetails() {
           <div className="grid md:grid-cols-2 gap-4">
             <label className="text-sm font-medium text-slate-700">
               Name
-              <input value={form.name} onChange={set("name")} className={`${input} mt-2`} />
+              <input value={form.name} disabled={!canManage} onChange={set("name")} className={`${input} mt-2`} />
             </label>
             <label className="text-sm font-medium text-slate-700">
               Status
-              <select value={form.status} onChange={set("status")} className={`${input} mt-2`}>
+              <select value={form.status} disabled={!canManage} onChange={set("status")} className={`${input} mt-2`}>
                 <option value="PLANNING">Planning</option>
                 <option value="IN_PROGRESS">In progress</option>
                 <option value="ON_HOLD">On hold</option>
@@ -306,11 +316,11 @@ export default function ProjectDetails() {
             </label>
             <label className="text-sm font-medium text-slate-700">
               Client name
-              <input value={form.clientName} onChange={set("clientName")} className={`${input} mt-2`} />
+              <input value={form.clientName} disabled={!canManage} onChange={set("clientName")} className={`${input} mt-2`} />
             </label>
             <label className="text-sm font-medium text-slate-700">
               Priority
-              <select value={form.priority} onChange={set("priority")} className={`${input} mt-2`}>
+              <select value={form.priority} disabled={!canManage} onChange={set("priority")} className={`${input} mt-2`}>
                 <option value="HIGH">High</option>
                 <option value="MEDIUM">Medium</option>
                 <option value="LOW">Low</option>
@@ -318,36 +328,38 @@ export default function ProjectDetails() {
             </label>
             <label className="text-sm font-medium text-slate-700">
               Start date
-              <input type="date" value={form.startDate} onChange={set("startDate")} className={`${input} mt-2`} />
+              <input type="date" value={form.startDate} disabled={!canManage} onChange={set("startDate")} className={`${input} mt-2`} />
             </label>
             <label className="text-sm font-medium text-slate-700">
               End date
-              <input type="date" value={form.endDate} onChange={set("endDate")} className={`${input} mt-2`} />
+              <input type="date" value={form.endDate} disabled={!canManage} onChange={set("endDate")} className={`${input} mt-2`} />
             </label>
             <label className="text-sm font-medium text-slate-700 md:col-span-2">
               Description
-              <textarea rows={3} value={form.description} onChange={set("description")} className={`${input} mt-2`} />
+              <textarea rows={3} value={form.description} disabled={!canManage} onChange={set("description")} className={`${input} mt-2`} />
             </label>
             <label className="text-sm font-medium text-slate-700">
               Project value (original)
-              <input type="number" min="0" value={form.projectValue} onChange={set("projectValue")} className={`${input} mt-2`} />
+              <input type="number" min="0" value={form.projectValue} disabled={!canManage} onChange={set("projectValue")} className={`${input} mt-2`} />
             </label>
             <label className="text-sm font-medium text-slate-700">
               Client estimation (hrs)
-              <input type="number" min="0" value={form.clientEstimationHours} onChange={set("clientEstimationHours")} className={`${input} mt-2`} />
+              <input type="number" min="0" value={form.clientEstimationHours} disabled={!canManage} onChange={set("clientEstimationHours")} className={`${input} mt-2`} />
             </label>
             <label className="text-sm font-medium text-slate-700">
               Team estimation (hrs)
-              <input type="number" min="0" value={form.teamEstimationHours} onChange={set("teamEstimationHours")} className={`${input} mt-2`} />
+              <input type="number" min="0" value={form.teamEstimationHours} disabled={!canManage} onChange={set("teamEstimationHours")} className={`${input} mt-2`} />
             </label>
           </div>
-          <button
-            disabled={saving}
-            className={primaryBtn}
-            onClick={() => save(() => api.put(`/projects/${id}`, form), "Project updated")}
-          >
-            Save details
-          </button>
+          {canManage && (
+            <button
+              disabled={saving}
+              className={primaryBtn}
+              onClick={() => save(() => api.put(`/projects/${id}`, form), "Project updated")}
+            >
+              Save details
+            </button>
+          )}
         </div>
 
         {/* Marketing time (edited on the lead) */}
