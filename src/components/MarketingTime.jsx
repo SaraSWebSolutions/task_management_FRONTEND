@@ -1,67 +1,50 @@
-import { useEffect, useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
-import api from "../api/axios";
+import { useState } from "react";
+import { Plus, Pencil, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
+import api from "../api/axios";
+import { Card, Field, Modal, PrimaryButton, GhostButton, EmptyState, inputClass } from "./ui";
+import { fmtDate } from "../utils/format";
+import { can } from "../utils/permissions";
 
-const input =
-  "w-full border border-slate-300 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-brand";
 const today = () => new Date().toISOString().slice(0, 10);
 const money = (n) =>
   `₹${Number(n || 0).toLocaleString("en-IN", { maximumFractionDigits: 0 })}`;
 
-const toRows = (list = []) =>
-  list.map((e) => ({
-    _id: e._id,
-    user: e.user?._id || "",
-    name: e.user?.name || "",
-    hours: e.hours,
-    rate: e.hourlyRate,
-    note: e.note || "",
-    date: e.date ? e.date.slice(0, 10) : today(),
-  }));
+const blank = () => ({ user: "", hours: "", date: today(), note: "" });
 
-// Marketing time spent to win a lead / project: person + hours + date + note
+// Marketing time spent to win a lead / project. Entries are listed here;
+// adding or editing one opens a drawer (same style as Add Project).
 export default function MarketingTime({ lead, users, onSaved }) {
-  const [rows, setRows] = useState(toRows(lead.marketing));
-  const [pick, setPick] = useState("");
-  const [hours, setHours] = useState("");
-  const [date, setDate] = useState(today());
-  const [note, setNote] = useState("");
+  const canManage = can("leads.manage");
+  const rows = lead.marketing || [];
+
+  const [editing, setEditing] = useState(null); // null | "new" | index
+  const [form, setForm] = useState(blank());
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    setRows(toRows(lead.marketing));
-  }, [lead]);
-
-  const add = () => {
-    if (!pick) return toast.error("Select a person");
-    if (hours === "" || Number(hours) < 0) return toast.error("Enter hours");
-    const user = users.find((u) => u._id === pick);
-    setRows((r) => [
-      ...r,
-      { user: pick, name: user?.name || "", hours: Number(hours), rate: null, note, date },
-    ]);
-    setPick("");
-    setHours("");
-    setNote("");
-  };
+  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
   const totalHours = rows.reduce((s, r) => s + Number(r.hours || 0), 0);
-  const totalCost = rows.reduce((s, r) => s + Number(r.hours || 0) * (r.rate || 0), 0);
+  const totalCost = rows.reduce(
+    (s, r) => s + Number(r.hours || 0) * (r.hourlyRate || 0),
+    0,
+  );
 
-  const save = async () => {
+  const payload = (list) =>
+    list.map((r) => ({
+      _id: r._id,
+      user: r.user?._id || r.user,
+      hours: r.hours,
+      note: r.note,
+      date: r.date,
+    }));
+
+  const persist = async (list, success) => {
     try {
       setSaving(true);
-      await api.put(`/leads/${lead._id}/marketing`, {
-        marketing: rows.map((r) => ({
-          _id: r._id,
-          user: r.user,
-          hours: r.hours,
-          note: r.note,
-          date: r.date,
-        })),
-      });
-      toast.success("Marketing time saved");
+      await api.put(`/leads/${lead._id}/marketing`, { marketing: payload(list) });
+      toast.success(success);
+      setEditing(null);
       onSaved?.();
     } catch (error) {
       toast.error(error?.response?.data?.message || "Failed to save");
@@ -70,101 +53,137 @@ export default function MarketingTime({ lead, users, onSaved }) {
     }
   };
 
-  return (
-    <div className="bg-white rounded-3xl border shadow-sm p-6 space-y-4">
-      <div>
-        <h2 className="text-xl font-semibold text-slate-800">Marketing time</h2>
-        <p className="text-sm text-slate-500 mt-1">
-          Time spent on marketing to win this project. Total: {totalHours} hrs
-          {totalCost > 0 && ` · ${money(totalCost)}`}
-        </p>
-      </div>
+  const openNew = () => {
+    setForm(blank());
+    setEditing("new");
+  };
 
-      {rows.length > 0 && (
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-150 text-sm">
-            <thead>
-              <tr className="bg-slate-100">
-                <th className="p-3 text-left">Person</th>
-                <th className="p-3 text-left">Date</th>
-                <th className="p-3 text-center w-28">Hours</th>
-                <th className="p-3 text-left">Note</th>
-                <th className="p-3" />
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r, i) => (
-                <tr key={r._id || i} className="border-t">
-                  <td className="p-3">{r.name}</td>
-                  <td className="p-3">{r.date}</td>
-                  <td className="p-3">
-                    <input
-                      type="number"
-                      min="0"
-                      value={r.hours}
-                      onChange={(e) =>
-                        setRows((all) =>
-                          all.map((x, idx) => (idx === i ? { ...x, hours: e.target.value } : x)),
-                        )
-                      }
-                      className={input}
-                    />
-                  </td>
-                  <td className="p-3 text-slate-600">{r.note || "-"}</td>
-                  <td className="p-3 text-center">
+  const openEdit = (i) => {
+    const r = rows[i];
+    setForm({
+      user: r.user?._id || r.user || "",
+      hours: r.hours,
+      date: r.date ? String(r.date).slice(0, 10) : today(),
+      note: r.note || "",
+    });
+    setEditing(i);
+  };
+
+  const submit = () => {
+    if (!form.user) return toast.error("Select a person");
+    if (form.hours === "" || Number(form.hours) < 0) return toast.error("Enter the hours");
+    const entry = { ...(editing === "new" ? {} : rows[editing]), ...form, hours: Number(form.hours) };
+    const list = editing === "new" ? [...rows, entry] : rows.map((r, i) => (i === editing ? entry : r));
+    persist(list, editing === "new" ? "Marketing time added" : "Marketing time updated");
+  };
+
+  const remove = (i) => persist(rows.filter((_, idx) => idx !== i), "Entry removed");
+
+  return (
+    <>
+      <Card
+        title="Marketing time"
+        subtitle={`Time spent to win this project · ${totalHours} hrs${totalCost > 0 ? ` · ${money(totalCost)}` : ""}`}
+        action={
+          canManage && (
+            <PrimaryButton className="!py-2" onClick={openNew}>
+              <Plus size={16} /> Add time
+            </PrimaryButton>
+          )
+        }
+      >
+        {rows.length === 0 ? (
+          <EmptyState>No marketing time recorded yet.</EmptyState>
+        ) : (
+          <ul className="divide-y divide-slate-100 -my-2">
+            {rows.map((r, i) => (
+              <li key={r._id || i} className="flex items-start justify-between gap-3 py-3">
+                <div className="min-w-0">
+                  <p className="font-semibold text-slate-900">
+                    {r.user?.name || users.find((u) => u._id === r.user)?.name || "-"}
+                    <span className="ml-2 font-normal text-slate-500">{r.hours} hrs</span>
+                  </p>
+                  <p className="text-sm text-slate-500">
+                    {fmtDate(r.date)}
+                    {r.note ? ` · ${r.note}` : ""}
+                  </p>
+                </div>
+                {canManage && (
+                  <div className="flex shrink-0 gap-2">
                     <button
-                      onClick={() => setRows((all) => all.filter((_, idx) => idx !== i))}
-                      className="p-2 rounded-xl border border-red-200 text-red-600 hover:bg-red-50"
+                      onClick={() => openEdit(i)}
+                      aria-label="Edit entry"
+                      className="p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50"
+                    >
+                      <Pencil size={15} />
+                    </button>
+                    <button
+                      disabled={saving}
+                      onClick={() => remove(i)}
+                      aria-label="Remove entry"
+                      className="p-2 rounded-xl border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-60"
                     >
                       <Trash2 size={15} />
                     </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
 
-      <div className="grid sm:grid-cols-[1fr_9rem_6rem_1fr_auto] gap-3">
-        <select value={pick} onChange={(e) => setPick(e.target.value)} className={input}>
-          <option value="">Select person</option>
-          {users.map((u) => (
-            <option key={u._id} value={u._id}>
-              {u.name}
-            </option>
-          ))}
-        </select>
-        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={input} />
-        <input
-          type="number"
-          min="0"
-          value={hours}
-          onChange={(e) => setHours(e.target.value)}
-          placeholder="Hours"
-          className={input}
-        />
-        <input
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          placeholder="What was done"
-          className={input}
-        />
-        <button
-          onClick={add}
-          className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 px-4 py-2 hover:bg-slate-100"
-        >
-          <Plus size={16} /> Add
-        </button>
-      </div>
-
-      <button
-        disabled={saving}
-        onClick={save}
-        className="rounded-xl bg-brand px-5 py-2.5 text-white transition hover:bg-brand-hover disabled:opacity-60"
+      <Modal
+        open={editing !== null}
+        title={editing === "new" ? "Add Marketing Time" : "Edit Marketing Time"}
+        onClose={() => setEditing(null)}
+        footer={
+          <>
+            <GhostButton onClick={() => setEditing(null)}>Cancel</GhostButton>
+            <PrimaryButton disabled={saving} onClick={submit}>
+              {editing === "new" ? "Add Time" : "Save Changes"}
+            </PrimaryButton>
+          </>
+        }
       >
-        Save
-      </button>
-    </div>
+        <div className="space-y-5">
+          <Field label="Person" required>
+            <select value={form.user} onChange={set("user")} className={inputClass}>
+              <option value="">Select person</option>
+              {users.map((u) => (
+                <option key={u._id} value={u._id}>
+                  {u.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <div className="grid sm:grid-cols-2 gap-5">
+            <Field label="Date">
+              <input type="date" value={form.date} onChange={set("date")} className={inputClass} />
+            </Field>
+            <Field label="Hours" required>
+              <input
+                type="number"
+                min="0"
+                step="0.25"
+                value={form.hours}
+                onChange={set("hours")}
+                placeholder="0"
+                className={inputClass}
+              />
+            </Field>
+          </div>
+          <Field label="What was done">
+            <textarea
+              rows={3}
+              value={form.note}
+              onChange={set("note")}
+              placeholder="Calls, emails, meetings, proposal work..."
+              className={inputClass}
+            />
+          </Field>
+        </div>
+      </Modal>
+    </>
   );
 }

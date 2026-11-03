@@ -3,7 +3,6 @@ import {
   LayoutDashboard,
   ClipboardList,
   User,
-  Building2,
   Mail,
   FolderKanban,
   UserCog,
@@ -53,7 +52,16 @@ const CRM_GROUP = {
         p.startsWith("/edit-lead/"),
     },
     { to: "/crm/pipeline", text: "Lead Pipeline", perm: "leads.view" },
-    { to: "/crm/customers", text: "Customers", perm: "clients.view" },
+    { to: "/quotations", text: "Quotations", perm: "leads.view", match: (p) => p.startsWith("/quotations") },
+    {
+      to: "/crm/customers",
+      text: "Customers",
+      perm: "clients.view",
+      match: (p) =>
+        p.startsWith("/crm/customers") ||
+        p === "/add-customer" ||
+        p.startsWith("/edit-customer/"),
+    },
     { to: "/crm/deals", text: "Deals", perm: "deals.view" },
     { to: "/crm/tasks", text: "Tasks", perm: "crmtasks.view" },
     { to: "/crm/follow-ups", text: "Follow-ups", perm: "followups.view" },
@@ -152,20 +160,12 @@ const ANALYTICS_GROUP = {
   ],
 };
 
-const DASHBOARD_GROUP = {
-  key: "dashboard",
+// One combined dashboard (customers, projects, leads and finance together)
+const DASHBOARD_LINK = {
+  to: "/dashboard",
   text: "Dashboard",
   icon: LayoutDashboard,
-  children: [
-    { to: "/dashboard", text: "Default", perm: "dashboard.view" },
-    { to: "/crm-dashboard", text: "CRM", perm: "leads.view" },
-    {
-      to: "/pm/dashboard",
-      text: "Project Management",
-      perm: ["projects.view", "projecttasks.view"],
-    },
-    { to: "/finance/dashboard", text: "Finance", perm: "finance.view" },
-  ],
+  perm: "dashboard.view",
 };
 
 // Sidebar layout: section label -> items. A group opens into its children.
@@ -173,7 +173,7 @@ const SECTIONS = [
   {
     label: "Main",
     items: [
-      { group: DASHBOARD_GROUP },
+      DASHBOARD_LINK,
       {
         to: "/my-work",
         text: "My Work",
@@ -193,12 +193,6 @@ const SECTIONS = [
     label: "Apps & Modules",
     items: [
       { group: USER_GROUP },
-      {
-        to: "/clients",
-        text: "Clients",
-        icon: Building2,
-        perm: "clients.view",
-      },
       { group: CRM_GROUP },
       { group: PROJECT_GROUP },
       {
@@ -400,13 +394,9 @@ export default function Sidebar({
 
         {/* Scrollable Menu */}
         <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-3 py-4">
-          {sections.map((s) => (
+          {sections.map((s, i) => (
             <div key={s.label} className="mb-2">
-              {visible && (
-                <p className="px-4 pt-4 pb-2 text-xs font-semibold tracking-wider text-slate-400 uppercase text-left">
-                  {s.label}
-                </p>
-              )}
+              {i > 0 && <div className="mx-4 mb-3 border-t border-slate-100" />}
               {s.items.map((m) =>
                 m.children ? renderGroup(m) : renderLink(m),
               )}

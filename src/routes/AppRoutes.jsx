@@ -1,4 +1,6 @@
+import { lazy, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
+import AppSkeleton from "../components/PageSkeleton";
 
 import ProtectedRoute from "../components/ProtectedRoute";
 import PermissionRoute from "../components/PermissionRoute";
@@ -6,65 +8,68 @@ import PermissionRoute from "../components/PermissionRoute";
 import Login from "../pages/Login";
 import ForgotPassword from "../pages/ForgotPassword";
 import ResetPassword from "../pages/ResetPassword";
-import Profile from "../pages/Profile";
-import MyWork from "../pages/MyWork";
-import Dashboard from "../pages/Dashboard";
-import FinanceDashboard from "../pages/FinanceDashboard";
-import Notifications from "../pages/Notifications";
-import Calendar from "../pages/Calendar";
-import CalendarEvent from "../pages/CalendarEvent";
+const Profile = lazy(() => import("../pages/Profile"));
+const MyWork = lazy(() => import("../pages/MyWork"));
+const Dashboard = lazy(() => import("../pages/Dashboard"));
+const FinanceDashboard = lazy(() => import("../pages/FinanceDashboard"));
+const Notifications = lazy(() => import("../pages/Notifications"));
+const Calendar = lazy(() => import("../pages/Calendar"));
+const CalendarEvent = lazy(() => import("../pages/CalendarEvent"));
 
 
-import TaskDetails from "../pages/TaskDetails";
+const TaskDetails = lazy(() => import("../pages/TaskDetails"));
 
-import Clients from "../pages/Clients";
-import AddClient from "../pages/AddClient";
-import EditClient from "../pages/EditClient";
-import Campaigns from "../pages/Campaigns";
+const Clients = lazy(() => import("../pages/Clients"));
+const AddClient = lazy(() => import("../pages/AddClient"));
+const EditClient = lazy(() => import("../pages/EditClient"));
+const Campaigns = lazy(() => import("../pages/Campaigns"));
 
-import Leads from "../pages/Leads";
-import AddLead from "../pages/AddLead";
-import EditLead from "../pages/EditLead";
+const Leads = lazy(() => import("../pages/Leads"));
+const AddLead = lazy(() => import("../pages/AddLead"));
+const EditLead = lazy(() => import("../pages/EditLead"));
 
-import LeadDetails from "../pages/LeadDetails";
-import Projects from "../pages/Projects";
-import ProjectDetails from "../pages/ProjectDetails";
-import ProjectDashboard from "../pages/ProjectDashboard";
-import ProjectTaskBoard from "../pages/ProjectTaskBoard";
-import ProjectTaskList from "../pages/ProjectTaskList";
-import Milestones from "../pages/Milestones";
-import TimeTracking from "../pages/TimeTracking";
-import Reports from "../pages/Reports";
-import ReportDashboard from "../pages/ReportDashboard";
-import Users from "../pages/Users";
-import UserForm from "../pages/UserForm";
-import UserProfile from "../pages/UserProfile";
-import Roles from "../pages/Roles";
-import CrmDashboard from "../pages/CrmDashboard";
-import LeadPipeline from "../pages/LeadPipeline";
-import Customers from "../pages/Customers";
-import Deals from "../pages/Deals";
-import CrmTasks from "../pages/CrmTasks";
-import FollowUps from "../pages/FollowUps";
-import FinanceRevenue from "../pages/FinanceRevenue";
-import FinanceExpenses from "../pages/FinanceExpenses";
-import FinanceInvoices from "../pages/FinanceInvoices";
-import FinancePayments from "../pages/FinancePayments";
-import FinanceSubscriptions from "../pages/FinanceSubscriptions";
-import FinancePlans from "../pages/FinancePlans";
-import FinanceTax from "../pages/FinanceTax";
-import FinanceReports from "../pages/FinanceReports";
-import AnalyticsSales from "../pages/AnalyticsSales";
-import AnalyticsRevenue from "../pages/AnalyticsRevenue";
-import AnalyticsUsers from "../pages/AnalyticsUsers";
-import AnalyticsPerformance from "../pages/AnalyticsPerformance";
-import AnalyticsLeadSources from "../pages/AnalyticsLeadSources";
-import AnalyticsConversion from "../pages/AnalyticsConversion";
-import AnalyticsCustom from "../pages/AnalyticsCustom";
-import AnalyticsExport from "../pages/AnalyticsExport";
+const LeadDetails = lazy(() => import("../pages/LeadDetails"));
+const Quotations = lazy(() => import("../pages/Quotations"));
+const QuotationForm = lazy(() => import("../pages/QuotationForm"));
+const Projects = lazy(() => import("../pages/Projects"));
+const ProjectDetails = lazy(() => import("../pages/ProjectDetails"));
+const ProjectDashboard = lazy(() => import("../pages/ProjectDashboard"));
+const ProjectTaskBoard = lazy(() => import("../pages/ProjectTaskBoard"));
+const ProjectTaskList = lazy(() => import("../pages/ProjectTaskList"));
+const Milestones = lazy(() => import("../pages/Milestones"));
+const TimeTracking = lazy(() => import("../pages/TimeTracking"));
+const Reports = lazy(() => import("../pages/Reports"));
+const ReportDashboard = lazy(() => import("../pages/ReportDashboard"));
+const Users = lazy(() => import("../pages/Users"));
+const UserForm = lazy(() => import("../pages/UserForm"));
+const UserProfile = lazy(() => import("../pages/UserProfile"));
+const Roles = lazy(() => import("../pages/Roles"));
+const CrmDashboard = lazy(() => import("../pages/CrmDashboard"));
+const LeadPipeline = lazy(() => import("../pages/LeadPipeline"));
+const Customers = lazy(() => import("../pages/Customers"));
+const Deals = lazy(() => import("../pages/Deals"));
+const CrmTasks = lazy(() => import("../pages/CrmTasks"));
+const FollowUps = lazy(() => import("../pages/FollowUps"));
+const FinanceRevenue = lazy(() => import("../pages/FinanceRevenue"));
+const FinanceExpenses = lazy(() => import("../pages/FinanceExpenses"));
+const FinanceInvoices = lazy(() => import("../pages/FinanceInvoices"));
+const FinancePayments = lazy(() => import("../pages/FinancePayments"));
+const FinanceSubscriptions = lazy(() => import("../pages/FinanceSubscriptions"));
+const FinancePlans = lazy(() => import("../pages/FinancePlans"));
+const FinanceTax = lazy(() => import("../pages/FinanceTax"));
+const FinanceReports = lazy(() => import("../pages/FinanceReports"));
+const AnalyticsSales = lazy(() => import("../pages/AnalyticsSales"));
+const AnalyticsRevenue = lazy(() => import("../pages/AnalyticsRevenue"));
+const AnalyticsUsers = lazy(() => import("../pages/AnalyticsUsers"));
+const AnalyticsPerformance = lazy(() => import("../pages/AnalyticsPerformance"));
+const AnalyticsLeadSources = lazy(() => import("../pages/AnalyticsLeadSources"));
+const AnalyticsConversion = lazy(() => import("../pages/AnalyticsConversion"));
+const AnalyticsCustom = lazy(() => import("../pages/AnalyticsCustom"));
+const AnalyticsExport = lazy(() => import("../pages/AnalyticsExport"));
 
 const AppRoutes = () => {
   return (
+    <Suspense fallback={<AppSkeleton />}>
     <Routes>
       {/* Login */}
       <Route path="/" element={<Login />} />
@@ -207,6 +212,22 @@ const AppRoutes = () => {
         }
       />
       <Route
+        path="/add-customer"
+        element={
+          <PermissionRoute perm="clients.manage">
+            <Customers />
+          </PermissionRoute>
+        }
+      />
+      <Route
+        path="/edit-customer/:id"
+        element={
+          <PermissionRoute perm="clients.manage">
+            <Customers />
+          </PermissionRoute>
+        }
+      />
+      <Route
         path="/clients"
         element={
           <PermissionRoute perm="clients.view">
@@ -324,6 +345,30 @@ const AppRoutes = () => {
         element={
           <PermissionRoute perm="timelogs.view">
             <TimeTracking />
+          </PermissionRoute>
+        }
+      />
+      <Route
+        path="/quotations"
+        element={
+          <PermissionRoute perm="leads.view">
+            <Quotations />
+          </PermissionRoute>
+        }
+      />
+      <Route
+        path="/quotations/new"
+        element={
+          <PermissionRoute perm="leads.manage">
+            <QuotationForm />
+          </PermissionRoute>
+        }
+      />
+      <Route
+        path="/quotations/:id"
+        element={
+          <PermissionRoute perm="leads.view">
+            <QuotationForm />
           </PermissionRoute>
         }
       />
@@ -481,6 +526,7 @@ const AppRoutes = () => {
         }
       />
     </Routes>
+    </Suspense>
   );
 };
 

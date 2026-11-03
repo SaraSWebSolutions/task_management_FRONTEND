@@ -3,6 +3,7 @@ export const LEAD_SOURCES = [
   { value: "EVENT", label: "Event" },
   { value: "META", label: "Meta" },
   { value: "INDIAMART", label: "IndiaMART" },
+  { value: "JUSTDIAL", label: "JustDial" },
   { value: "OTHER", label: "Other" },
 ];
 

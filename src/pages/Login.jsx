@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../api/axios";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
@@ -18,6 +18,11 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // Download the dashboard code while the person types, so it opens straight after sign-in
+  useEffect(() => {
+    import("./Dashboard").catch(() => {});
+  }, []);
 
   const handleLogin = async (e) => {
     e.preventDefault();

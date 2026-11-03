@@ -21,7 +21,7 @@ const STATUS = {
   FAILED: ["Failed", "bg-red-100 text-red-700"],
 };
 const LEAD_STATUS = [["", "Any status"], ["NEW", "New"], ["DEMO_SCHEDULED", "Demo scheduled"], ["QUOTATION_SENT", "Quotation sent"], ["SALES", "Sales"], ["PROJECT", "Won"], ["LOST", "Lost"]];
-const LEAD_SOURCE = [["", "Any source"], ["BNI", "BNI"], ["EVENT", "Event"], ["META", "Meta Ads"], ["INDIAMART", "IndiaMART"], ["OTHER", "Other"]];
+const LEAD_SOURCE = [["", "Any source"], ["BNI", "BNI"], ["EVENT", "Event"], ["META", "Meta Ads"], ["INDIAMART", "IndiaMART"], ["JUSTDIAL", "JustDial"], ["OTHER", "Other"]];
 
 const FOLDERS = [
   { key: "sent", label: "Sent", icon: Send },

@@ -42,17 +42,17 @@ export function PageHeader({ title, subtitle, breadcrumbs, actions }) {
 export function Card({ title, subtitle, action, children, className = "" }) {
   return (
     <section
-      className={`bg-white rounded-2xl border border-slate-200 shadow-sm p-5 text-left ${className}`}
+      className={`bg-white rounded-3xl border border-slate-200 shadow-sm p-6 text-left ${className}`}
     >
       {(title || action) && (
-        <header className="flex items-start justify-between gap-3 mb-4">
+        <header className="flex items-start justify-between gap-3 mb-5 pb-4 border-b border-slate-100">
           <div>
             {title && (
               <div role="heading" aria-level={2} className="text-lg font-semibold text-slate-900">
                 {title}
               </div>
             )}
-            {subtitle && <p className="text-sm text-slate-500">{subtitle}</p>}
+            {subtitle && <p className="text-sm text-slate-500 mt-0.5">{subtitle}</p>}
           </div>
           {action}
         </header>
@@ -80,19 +80,28 @@ export function SectionCard({ icon, iconClass = "text-brand", title, children, c
 // Stat card with a soft colored icon tile on top.
 export function StatCard({ label, value, icon, hint, tone = "indigo" }) {
   const tones = {
-    indigo: "bg-indigo-50 text-indigo-500",
-    green: "bg-emerald-50 text-emerald-500",
-    red: "bg-red-50 text-red-500",
-    amber: "bg-amber-50 text-amber-500",
+    indigo: { tile: "bg-indigo-50 text-indigo-500", pill: "bg-indigo-50 text-indigo-600", bar: "from-indigo-400 to-violet-400" },
+    green: { tile: "bg-emerald-50 text-emerald-500", pill: "bg-emerald-50 text-emerald-600", bar: "from-emerald-400 to-teal-300" },
+    red: { tile: "bg-red-50 text-red-500", pill: "bg-red-50 text-red-600", bar: "from-red-400 to-pink-300" },
+    amber: { tile: "bg-amber-50 text-amber-500", pill: "bg-amber-50 text-amber-600", bar: "from-amber-400 to-orange-300" },
+    cyan: { tile: "bg-cyan-50 text-cyan-500", pill: "bg-cyan-50 text-cyan-600", bar: "from-cyan-400 to-sky-300" },
   };
+  const t = tones[tone] || tones.indigo;
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 p-6 text-left">
-      <div className={`h-16 w-16 rounded-xl flex items-center justify-center ${tones[tone]}`}>
-        {icon}
+    <div className="relative overflow-hidden bg-white rounded-3xl border border-slate-200 shadow-sm p-5 pb-6 text-left transition-shadow hover:shadow-md">
+      <div className="flex items-start justify-between gap-3">
+        <div className={`h-12 w-12 shrink-0 rounded-xl flex items-center justify-center ${t.tile}`}>
+          {icon}
+        </div>
+        {hint && (
+          <span className={`max-w-[60%] rounded-full px-2.5 py-1 text-right text-xs font-semibold ${t.pill}`}>
+            {hint}
+          </span>
+        )}
       </div>
-      <p className="mt-5 text-slate-500">{label}</p>
-      <p className="mt-1 text-4xl font-bold text-slate-900">{value}</p>
-      {hint && <p className="mt-2 text-sm font-medium text-emerald-600">{hint}</p>}
+      <p className="mt-4 text-3xl font-bold text-slate-900 break-words">{value}</p>
+      <p className="mt-0.5 text-sm text-slate-500">{label}</p>
+      <span className={`absolute inset-x-0 bottom-0 h-1 bg-linear-to-r ${t.bar}`} />
     </div>
   );
 }
@@ -137,10 +146,25 @@ export function Avatar({ name, src, size = "h-10 w-10", text = "text-sm" }) {
   );
 }
 
+// Grey pulsing block used to hold the place of content while it loads
+export function Skeleton({ className = "", style }) {
+  return <div style={style} className={`animate-pulse rounded-lg bg-slate-200/70 ${className}`} />;
+}
+
+// Every page shows this while its data loads: a few skeleton rows instead of a spinner
 export function Spinner({ label = "Loading..." }) {
   return (
-    <div className="flex items-center justify-center gap-2 py-16 text-slate-500">
-      <Loader2 className="animate-spin" size={20} /> {label}
+    <div role="status" aria-live="polite" className="space-y-4 px-2 py-8">
+      <span className="sr-only">{label}</span>
+      {[0, 1, 2, 3].map((i) => (
+        <div key={i} className="flex items-center gap-4">
+          <Skeleton className="h-11 w-11 shrink-0 rounded-xl" />
+          <div className="flex-1 space-y-2">
+            <Skeleton className="h-4" style={{ width: `${75 - i * 9}%` }} />
+            <Skeleton className="h-3 w-1/3" />
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

@@ -61,7 +61,7 @@ const LANDING = [
   ["leads.view", "/leads"],
   ["projects.view", "/projects"],
   ["projecttasks.view", "/pm/tasks"],
-  ["clients.view", "/clients"],
+  ["clients.view", "/crm/customers"],
   ["finance.view", "/finance/dashboard"],
   ["users.view", "/users"],
   ["campaigns.view", "/campaigns"],

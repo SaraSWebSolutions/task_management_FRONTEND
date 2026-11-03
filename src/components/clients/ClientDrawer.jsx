@@ -1,4 +1,4 @@
-// Add / Edit client form shown in a right-side drawer.
+// Add / Edit customer form shown in a right-side drawer.
 import { useEffect, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import toast from "react-hot-toast";
@@ -150,7 +150,7 @@ export default function ClientDrawer({ clientId, onClose, onSaved }) {
       })
       .catch(() => {
         if (cancelled) return;
-        toast.error("Failed to load client");
+        toast.error("Failed to load customer");
         onClose();
       })
       .finally(() => {
@@ -205,7 +205,7 @@ export default function ClientDrawer({ clientId, onClose, onSaved }) {
 
   const save = async () => {
     if (!form.companyName) return toast.error("Company Name is required");
-    if (!form.clientName) return toast.error("Client Name is required");
+    if (!form.clientName) return toast.error("Customer Name is required");
     if (!form.basicType) return toast.error("Please select a type");
     if (isWeb(form.basicType) && !form.domainName) return toast.error("Domain Name is required");
     if (isWeb(form.basicType) && form.domainOwnership === "US" && !form.domainRegDate) {
@@ -222,14 +222,14 @@ export default function ClientDrawer({ clientId, onClose, onSaved }) {
       setSaving(true);
       if (editing) {
         await api.put(`/clients/${clientId}`, { ...form, balance });
-        toast.success("Client updated successfully");
+        toast.success("Customer updated successfully");
       } else {
         await api.post("/clients", { ...form, balance });
-        toast.success("Client added successfully");
+        toast.success("Customer added successfully");
       }
       onSaved();
     } catch (error) {
-      toast.error(error?.response?.data?.message || `Failed to ${editing ? "update" : "add"} client`);
+      toast.error(error?.response?.data?.message || `Failed to ${editing ? "update" : "add"} customer`);
     } finally {
       setSaving(false);
     }
@@ -237,8 +237,8 @@ export default function ClientDrawer({ clientId, onClose, onSaved }) {
 
   return (
     <Drawer
-      title={editing ? "Edit Client" : "Add Client"}
-      subtitle={editing ? "Update client details" : "Create a new client record"}
+      title={editing ? "Edit Customer" : "Add Customer"}
+      subtitle={editing ? "Update customer details" : "Create a new customer record"}
       width="sm:max-w-[760px]"
       onClose={onClose}
       footer={
@@ -247,13 +247,13 @@ export default function ClientDrawer({ clientId, onClose, onSaved }) {
             Cancel
           </GhostButton>
           <PrimaryButton type="button" onClick={save} disabled={saving || loading} className="!py-2.5">
-            {saving ? "Saving..." : editing ? "Update Client" : "Save Client"}
+            {saving ? "Saving..." : editing ? "Update Customer" : "Save Customer"}
           </PrimaryButton>
         </>
       }
     >
       {loading ? (
-        <Spinner label="Loading client..." />
+        <Spinner label="Loading customer..." />
       ) : (
         <form
           onSubmit={(e) => {
@@ -266,8 +266,8 @@ export default function ClientDrawer({ clientId, onClose, onSaved }) {
             <Field label="Company Name" required>
               <input name="companyName" value={form.companyName} onChange={handleChange} placeholder="Enter company name" className={ic} />
             </Field>
-            <Field label="Client Name" required>
-              <input name="clientName" value={form.clientName} onChange={handleChange} placeholder="Enter client name" className={ic} />
+            <Field label="Customer Name" required>
+              <input name="clientName" value={form.clientName} onChange={handleChange} placeholder="Enter customer name" className={ic} />
             </Field>
             <Field label="GST Number">
               <input
@@ -330,7 +330,7 @@ export default function ClientDrawer({ clientId, onClose, onSaved }) {
                     value={form.domainOwnership}
                     onChange={(val) => setForm((p) => ({ ...p, domainOwnership: val }))}
                     options={[
-                      { value: "CLIENT", label: "Client" },
+                      { value: "CLIENT", label: "Customer" },
                       { value: "US", label: "Us" },
                     ]}
                   />

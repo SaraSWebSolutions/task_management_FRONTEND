@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   Plus,
   Trash2,
@@ -58,6 +59,8 @@ const empty = { lead: "", type: "CALL", notes: "", scheduledAt: "", reminder: fa
 
 export default function FollowUps() {
   const canManage = can("followups.manage");
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const [data, setData] = useState(null);
   const [options, setOptions] = useState({ users: [], leads: [] });
@@ -126,6 +129,15 @@ export default function FollowUps() {
     setForm(empty);
     setEditing("new");
   };
+
+  // Arrived from a lead page ("Add follow-up"): open the drawer with that lead selected
+  const newFor = location.state?.newFor;
+  useEffect(() => {
+    if (!newFor || !canManage) return;
+    setForm({ ...empty, lead: newFor });
+    setEditing("new");
+    navigate(location.pathname, { replace: true, state: null });
+  }, [newFor, canManage, navigate, location.pathname]);
 
   const openEdit = (f) => {
     setForm({

@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { Menu, User, UserCircle, Bell, CalendarDays, LogOut, Search, Mail } from "lucide-react";
+import { Menu, User, UserCircle, Bell, CalendarDays, LogOut, Mail } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import NotificationBell from "./notifications/NotificationBell";
-import CommandPalette from "./CommandPalette";
 import { refreshPermissions, can } from "../utils/permissions";
 
 const ROLE_LABEL = { ADMIN: "Administrator", MANAGER: "Manager", EMPLOYEE: "Employee" };
@@ -18,17 +17,7 @@ export default function Layout({ children }) {
   const user = JSON.parse(localStorage.getItem("user"));
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
   const menuRef = useRef(null);
-
-  // Ctrl+K / Cmd+K opens the page search from anywhere
-  useEffect(() => {
-    const onKey = (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") { e.preventDefault(); setSearchOpen((o) => !o); }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -97,20 +86,10 @@ export default function Layout({ children }) {
             >
               <Menu size={20} />
             </button>
-
-            <button
-              onClick={() => setSearchOpen(true)}
-              aria-label="Search pages"
-              className="hidden md:flex items-center gap-3 h-12 w-72 lg:w-110 rounded-xl border border-slate-200 bg-slate-50/60 px-4 text-left text-slate-400 hover:bg-white transition"
-            >
-              <Search size={18} />
-              <span className="flex-1 truncate">Search anything... (Ctrl+K)</span>
-            </button>
           </div>
 
           {/* Right Section */}
           <div className="flex items-center gap-2 sm:gap-4">
-            <button onClick={() => setSearchOpen(true)} aria-label="Quick search" className="md:hidden h-10 w-10 flex items-center justify-center rounded-xl border border-slate-200 bg-white hover:bg-slate-100 transition"><Search size={19} /></button>
             <NotificationBell />
             {can("campaigns.view") && (
               <Link to="/campaigns" aria-label="Email campaigns" title="Email campaigns" className="hidden sm:flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white hover:bg-slate-100 transition"><Mail size={19} /></Link>
@@ -156,7 +135,6 @@ export default function Layout({ children }) {
         {children}
       </main>
 
-      <CommandPalette open={searchOpen} onClose={() => setSearchOpen(false)} />
     </div>
   );
 }

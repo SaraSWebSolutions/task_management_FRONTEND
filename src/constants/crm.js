@@ -20,6 +20,7 @@ export const SOURCE_COLORS = {
   EVENT: "#f59e0b",
   META: "#3b82f6",
   INDIAMART: "#10b981",
+  JUSTDIAL: "#ec4899",
   OTHER: "#94a3b8",
 };
 
