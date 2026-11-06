@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useParams } from "react-router-dom";
 import AppSkeleton from "../components/PageSkeleton";
 
 import ProtectedRoute from "../components/ProtectedRoute";
@@ -32,11 +32,13 @@ const LeadDetails = lazy(() => import("../pages/LeadDetails"));
 const Quotations = lazy(() => import("../pages/Quotations"));
 const QuotationForm = lazy(() => import("../pages/QuotationForm"));
 const Projects = lazy(() => import("../pages/Projects"));
-const ProjectDetails = lazy(() => import("../pages/ProjectDetails"));
+const Products = lazy(() => import("../pages/Products"));
+const ProductForm = lazy(() => import("../pages/ProductForm"));
+const ProductDetails = lazy(() => import("../pages/ProductDetails"));
+const Categories = lazy(() => import("../pages/Categories"));
 const ProjectDashboard = lazy(() => import("../pages/ProjectDashboard"));
 const ProjectTaskBoard = lazy(() => import("../pages/ProjectTaskBoard"));
 const ProjectTaskList = lazy(() => import("../pages/ProjectTaskList"));
-const Milestones = lazy(() => import("../pages/Milestones"));
 const TimeTracking = lazy(() => import("../pages/TimeTracking"));
 const Reports = lazy(() => import("../pages/Reports"));
 const ReportDashboard = lazy(() => import("../pages/ReportDashboard"));
@@ -47,12 +49,11 @@ const Roles = lazy(() => import("../pages/Roles"));
 const CrmDashboard = lazy(() => import("../pages/CrmDashboard"));
 const LeadPipeline = lazy(() => import("../pages/LeadPipeline"));
 const Customers = lazy(() => import("../pages/Customers"));
-const Deals = lazy(() => import("../pages/Deals"));
-const CrmTasks = lazy(() => import("../pages/CrmTasks"));
 const FollowUps = lazy(() => import("../pages/FollowUps"));
 const FinanceRevenue = lazy(() => import("../pages/FinanceRevenue"));
 const FinanceExpenses = lazy(() => import("../pages/FinanceExpenses"));
 const FinanceInvoices = lazy(() => import("../pages/FinanceInvoices"));
+const InvoiceForm = lazy(() => import("../pages/InvoiceForm"));
 const FinancePayments = lazy(() => import("../pages/FinancePayments"));
 const FinanceSubscriptions = lazy(() => import("../pages/FinanceSubscriptions"));
 const FinancePlans = lazy(() => import("../pages/FinancePlans"));
@@ -66,6 +67,12 @@ const AnalyticsLeadSources = lazy(() => import("../pages/AnalyticsLeadSources"))
 const AnalyticsConversion = lazy(() => import("../pages/AnalyticsConversion"));
 const AnalyticsCustom = lazy(() => import("../pages/AnalyticsCustom"));
 const AnalyticsExport = lazy(() => import("../pages/AnalyticsExport"));
+
+// The old project overview page is gone: opening a project opens its edit drawer
+const ProjectRedirect = () => {
+  const { id } = useParams();
+  return <Navigate to={`/projects?edit=${id}`} replace />;
+};
 
 const AppRoutes = () => {
   return (
@@ -187,22 +194,9 @@ const AppRoutes = () => {
           </PermissionRoute>
         }
       />
-      <Route
-        path="/crm/deals"
-        element={
-          <PermissionRoute perm="deals.view">
-            <Deals />
-          </PermissionRoute>
-        }
-      />
-      <Route
-        path="/crm/tasks"
-        element={
-          <PermissionRoute perm="crmtasks.view">
-            <CrmTasks />
-          </PermissionRoute>
-        }
-      />
+      {/* Deals and CRM Tasks are removed from CRM */}
+      <Route path="/crm/deals" element={<Navigate to="/leads" replace />} />
+      <Route path="/crm/tasks" element={<Navigate to="/leads" replace />} />
       <Route
         path="/crm/follow-ups"
         element={
@@ -293,6 +287,46 @@ const AppRoutes = () => {
         }
       />
       <Route
+        path="/products"
+        element={
+          <PermissionRoute perm="products.view">
+            <Products />
+          </PermissionRoute>
+        }
+      />
+      <Route
+        path="/products/add"
+        element={
+          <PermissionRoute perm="products.manage">
+            <ProductForm />
+          </PermissionRoute>
+        }
+      />
+      <Route
+        path="/products/:id/edit"
+        element={
+          <PermissionRoute perm="products.manage">
+            <ProductForm />
+          </PermissionRoute>
+        }
+      />
+      <Route
+        path="/products/:id"
+        element={
+          <PermissionRoute perm="products.view">
+            <ProductDetails />
+          </PermissionRoute>
+        }
+      />
+      <Route
+        path="/categories"
+        element={
+          <PermissionRoute perm="categories.view">
+            <Categories />
+          </PermissionRoute>
+        }
+      />
+      <Route
         path="/projects"
         element={
           <PermissionRoute perm="projects.view">
@@ -304,7 +338,7 @@ const AppRoutes = () => {
         path="/projects/:id"
         element={
           <PermissionRoute perm="projects.view">
-            <ProjectDetails />
+            <ProjectRedirect />
           </PermissionRoute>
         }
       />
@@ -332,14 +366,8 @@ const AppRoutes = () => {
           </PermissionRoute>
         }
       />
-      <Route
-        path="/pm/milestones"
-        element={
-          <PermissionRoute perm="milestones.view">
-            <Milestones />
-          </PermissionRoute>
-        }
-      />
+      {/* Milestones are hidden for now */}
+      <Route path="/pm/milestones" element={<Navigate to="/projects" replace />} />
       <Route
         path="/pm/time"
         element={
@@ -409,6 +437,22 @@ const AppRoutes = () => {
         element={
           <PermissionRoute perm="invoices.view">
             <FinanceInvoices />
+          </PermissionRoute>
+        }
+      />
+      <Route
+        path="/finance/invoices/new"
+        element={
+          <PermissionRoute perm="invoices.manage">
+            <InvoiceForm />
+          </PermissionRoute>
+        }
+      />
+      <Route
+        path="/finance/invoices/:id/edit"
+        element={
+          <PermissionRoute perm="invoices.manage">
+            <InvoiceForm />
           </PermissionRoute>
         }
       />

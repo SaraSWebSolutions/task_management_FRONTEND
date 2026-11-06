@@ -1,3 +1,4 @@
+import { NOTIFICATIONS_CHANGED, notifyNotificationsChanged } from "../utils/notificationEvents";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { CheckCheck, Trash2, Filter, Clock } from "lucide-react";
@@ -32,11 +33,16 @@ export default function Notifications() {
     }
   }, [type]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+    window.addEventListener(NOTIFICATIONS_CHANGED, load);
+    return () => window.removeEventListener(NOTIFICATIONS_CHANGED, load);
+  }, [load]);
 
   const open = async (n) => {
     if (!n.read) {
-      await api.patch(`/notifications/${n._id}/read`).catch(() => {});
+      await api.patch(`/notifications/${n._id}/read`);
+      notifyNotificationsChanged();
       setData((d) => ({ ...d, unread: Math.max(0, d.unread - 1), notifications: d.notifications.map((x) => (x._id === n._id ? { ...x, read: true } : x)) }));
     }
     if (n.link) navigate(n.link);
@@ -45,6 +51,7 @@ export default function Notifications() {
   const remove = async (id) => {
     try {
       await api.delete(`/notifications/${id}`);
+      notifyNotificationsChanged();
       setData((d) => ({ ...d, notifications: d.notifications.filter((x) => x._id !== id), unread: d.notifications.find((x) => x._id === id && !x.read) ? d.unread - 1 : d.unread, total: d.total - 1 }));
     } catch (e) {
       toast.error(apiError(e, "Failed to delete"));
@@ -54,7 +61,7 @@ export default function Notifications() {
   const markAll = async () => {
     try {
       await api.patch("/notifications/read-all");
-      load();
+      notifyNotificationsChanged();
     } catch (e) {
       toast.error(apiError(e, "Failed to update"));
     }
@@ -63,6 +70,7 @@ export default function Notifications() {
   const clearRead = async () => {
     try {
       const { data: r } = await api.delete("/notifications/read");
+      notifyNotificationsChanged();
       toast.success(r.deleted ? `${r.deleted} cleared` : "Nothing to clear");
       load();
     } catch (e) {

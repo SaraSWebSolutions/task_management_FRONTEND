@@ -19,15 +19,16 @@ export const SEARCH_PAGES = [
   { text: "Quotations", to: "/quotations", group: "CRM", perm: "leads.view", words: "quote estimate proforma share whatsapp" },
   { text: "Add Quotation", to: "/quotations/new", group: "CRM", perm: "leads.manage", words: "new quote generate" },
   { text: "Customers", to: "/crm/customers", group: "CRM", perm: "clients.view", words: "clients amc renewal billing" },
-  { text: "Deals", to: "/crm/deals", group: "CRM", perm: "deals.view" },
-  { text: "CRM Tasks", to: "/crm/tasks", group: "CRM", perm: "crmtasks.view" },
   { text: "Follow-ups", to: "/crm/follow-ups", group: "CRM", perm: "followups.view", words: "call reminder" },
   { text: "Email Campaigns", to: "/campaigns", group: "CRM", perm: "campaigns.view", words: "mail compose send" },
+
+  { text: "Products", to: "/products", group: "Products", perm: "products.view", words: "catalog items sku" },
+  { text: "Add Product", to: "/products/add", group: "Products", perm: "products.manage", words: "new item" },
+  { text: "Categories", to: "/categories", group: "Products", perm: "categories.view", words: "catalog" },
 
   { text: "Projects", to: "/projects", group: "Projects", perm: "projects.view" },
   { text: "Task Board", to: "/pm/board", group: "Projects", perm: "projecttasks.view", words: "kanban" },
   { text: "Task List", to: "/pm/tasks", group: "Projects", perm: "projecttasks.view", words: "assign" },
-  { text: "Milestones", to: "/pm/milestones", group: "Projects", perm: "milestones.view" },
   { text: "Time Tracking", to: "/pm/time", group: "Projects", perm: "timelogs.view", words: "hours timesheet" },
 
   { text: "Revenue", to: "/finance/revenue", group: "Finance", perm: "finance.view" },

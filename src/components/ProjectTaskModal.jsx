@@ -43,6 +43,19 @@ export default function ProjectTaskModal({ open, task, defaults, options, saving
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
   // "SUPPORT" / "OTHER" are work with no project
   const noProject = ["SUPPORT", "OTHER"].includes(form.project);
+
+  // Only the people assigned to the chosen project can be given its tasks.
+  // Support / other work (no project) can go to anyone.
+  const selectedProject = (options.projects || []).find((p) => p._id === form.project);
+  const teamIds = (selectedProject?.team || []).map((m) => String(m.user?._id || m.user));
+  const projectChosen = Boolean(form.project) && !noProject;
+  const assignees = (options.users || []).filter(
+    (u) =>
+      !projectChosen ||
+      teamIds.includes(String(u._id)) ||
+      String(u._id) === String(form.assignee), // keep the current assignee of an old task visible
+  );
+
   const milestones = (options.milestones || []).filter(
     (m) => !noProject && String(m.project) === String(form.project),
   );
@@ -81,7 +94,12 @@ export default function ProjectTaskModal({ open, task, defaults, options, saving
         </Field>
         <div className="grid sm:grid-cols-2 gap-5">
           <Field label="Project / work type" required>
-            <select value={form.project} onChange={(e) => setForm((f) => ({ ...f, project: e.target.value, milestone: "" }))} className={inputClass}>
+            <select value={form.project} onChange={(e) => setForm((f) => {
+              const next = (options.projects || []).find((p) => p._id === e.target.value);
+              const ids = (next?.team || []).map((m) => String(m.user?._id || m.user));
+              const keep = !next || ids.includes(String(f.assignee));
+              return { ...f, project: e.target.value, milestone: "", assignee: keep ? f.assignee : "" };
+            })} className={inputClass}>
               <option value="">Select project</option>
               {options.projects.map((p) => (
                 <option key={p._id} value={p._id}>{p.name}</option>
@@ -98,10 +116,19 @@ export default function ProjectTaskModal({ open, task, defaults, options, saving
               ))}
             </select>
           </Field>
-          <Field label="Assignee">
+          <Field
+            label="Assignee"
+            hint={
+              projectChosen && teamIds.length === 0
+                ? "No team members on this project yet. Add them in Projects > Edit project."
+                : projectChosen
+                  ? "Only people assigned to this project are listed."
+                  : undefined
+            }
+          >
             <select value={form.assignee} onChange={set("assignee")} className={inputClass}>
               <option value="">Unassigned</option>
-              {options.users.map((u) => (
+              {assignees.map((u) => (
                 <option key={u._id} value={u._id}>{u.name}</option>
               ))}
             </select>

@@ -8,7 +8,15 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <title>Task Management</title>
-  </head>
+    <script>
+    try {
+      const stored = localStorage.getItem('task-management-theme');
+      const dark = stored === 'dark' || (!stored && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      document.documentElement.classList.toggle('dark', dark);
+      document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+    } catch (e) { /* Use default theme */ }
+  </script>
+</head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>

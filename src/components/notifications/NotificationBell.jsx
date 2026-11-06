@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Bell } from "lucide-react";
 import api from "../../api/axios";
+import { NOTIFICATIONS_CHANGED, notifyNotificationsChanged } from "../../utils/notificationEvents";
 import { typeMeta } from "../../constants/notifications";
 import { timeAgo } from "../../utils/format";
 
@@ -26,8 +27,9 @@ export default function NotificationBell() {
 
   useEffect(() => {
     load();
+    window.addEventListener(NOTIFICATIONS_CHANGED, load);
     const t = setInterval(load, POLL_MS);
-    return () => clearInterval(t);
+    return () => { clearInterval(t); window.removeEventListener(NOTIFICATIONS_CHANGED, load); };
   }, [load]);
 
   useEffect(() => {
@@ -42,15 +44,21 @@ export default function NotificationBell() {
   const go = async (n) => {
     setOpen(false);
     if (!n.read) {
-      api.patch(`/notifications/${n._id}/read`).catch(() => {});
-      setData((d) => ({ ...d, unread: Math.max(0, d.unread - 1), notifications: d.notifications.map((x) => (x._id === n._id ? { ...x, read: true } : x)) }));
+      try {
+        await api.patch(`/notifications/${n._id}/read`);
+        setData((d) => ({ ...d, unread: Math.max(0, d.unread - 1), notifications: d.notifications.map((x) => (x._id === n._id ? { ...x, read: true } : x)) }));
+        notifyNotificationsChanged();
+      } catch { /* Keep server state authoritative if the request fails. */ }
     }
     if (n.link) navigate(n.link);
   };
 
   const markAll = async () => {
-    await api.patch("/notifications/read-all").catch(() => {});
-    setData((d) => ({ ...d, unread: 0, notifications: d.notifications.map((x) => ({ ...x, read: true })) }));
+    try {
+      await api.patch("/notifications/read-all");
+      setData((d) => ({ ...d, unread: 0, notifications: d.notifications.map((x) => ({ ...x, read: true })) }));
+      notifyNotificationsChanged();
+    } catch { /* Do not show read state when saving failed. */ }
   };
 
   return (

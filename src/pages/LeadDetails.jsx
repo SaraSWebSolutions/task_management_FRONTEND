@@ -13,6 +13,9 @@ import { can } from "../utils/permissions";
 const nice = (s) =>
   s ? s.charAt(0) + s.slice(1).toLowerCase().replaceAll("_", " ") : "-";
 
+const hasDemo = (type) => type === "DEMO" || type === "BOTH";
+const requestLabel = (type) => (type === "BOTH" ? "Demo + Quotation" : nice(type));
+
 const STEP_OF = { NEW: 0, DEMO_SCHEDULED: 1, QUOTATION_SENT: 1, SALES: 2, PROJECT: 3 };
 
 const readFile = (file) =>
@@ -24,7 +27,12 @@ const readFile = (file) =>
   });
 
 function Steps({ lead }) {
-  const labels = ["Lead", lead.requestType === "DEMO" ? "Demo" : "Quotation", "Sales", "Project"];
+  const labels = [
+    "Lead",
+    lead.requestType === "BOTH" ? "Demo & Quotation" : lead.requestType === "DEMO" ? "Demo" : "Quotation",
+    "Sales",
+    "Project",
+  ];
   const at = STEP_OF[lead.status] ?? -1;
   return (
     <ol className="flex flex-wrap items-center gap-2">
@@ -70,9 +78,12 @@ export default function LeadDetails() {
   const [users, setUsers] = useState([]);
   const [busy, setBusy] = useState(false);
 
+  const [salesNotes, setSalesNotes] = useState("");
+
   const [demo, setDemo] = useState({
     assignedTo: "",
     demoDate: "",
+    demoNotes: "",
     location: "",
     spendAmount: "",
     spendDoc: "",
@@ -101,6 +112,7 @@ export default function LeadDetails() {
       setDemo({
         assignedTo: l.assignedTo?._id || "",
         demoDate: l.demoDate ? l.demoDate.slice(0, 10) : "",
+        demoNotes: l.demoNotes || "",
         location: l.location || "",
         spendAmount: l.spendAmount ?? "",
         spendDoc: "",
@@ -174,7 +186,12 @@ export default function LeadDetails() {
   const showQuotation =
     canManage &&
     ["NEW", "DEMO_SCHEDULED", "QUOTATION_SENT"].includes(lead.status) &&
-    (lead.requestType === "QUOTATION" || lead.status !== "NEW");
+    (lead.requestType !== "DEMO" || lead.status !== "NEW");
+  // Quotation leads convert after the quotation is sent; demo-only leads after the demo
+  const showConvertSales =
+    canManage &&
+    (lead.status === "QUOTATION_SENT" ||
+      (lead.requestType === "DEMO" && lead.status === "DEMO_SCHEDULED"));
   const q = lead.quotation;
 
   return (
@@ -200,9 +217,12 @@ export default function LeadDetails() {
               <p className="mt-1 text-slate-500">
                 {[lead.company, lead.email, lead.phone].filter(Boolean).join(" · ")}
               </p>
+              {lead.whatsapp && (
+                <p className="mt-1 text-sm text-slate-500">WhatsApp: {lead.whatsapp}</p>
+              )}
               <p className="mt-2 text-sm text-slate-600">
-                Asking for: <b>{nice(lead.requestType)}</b>
-                {lead.requestType === "DEMO" && <> ({nice(lead.demoType)})</>}
+                Asking for: <b>{requestLabel(lead.requestType)}</b>
+                {hasDemo(lead.requestType) && lead.demoType && <> ({nice(lead.demoType)} demo)</>}
               </p>
               {lead.notes && <p className="mt-2 text-sm text-slate-500">{lead.notes}</p>}
             </div>
@@ -224,7 +244,7 @@ export default function LeadDetails() {
         <div className="grid gap-6 lg:grid-cols-3 items-start">
           <div className="lg:col-span-2 space-y-6">
             {/* Demo */}
-            {lead.requestType === "DEMO" && (
+            {hasDemo(lead.requestType) && (
               <Card title={`Demo (${nice(lead.demoType)})`}>
                 <div className="space-y-5">
                   <div className="grid sm:grid-cols-2 gap-5">
@@ -253,6 +273,17 @@ export default function LeadDetails() {
                       />
                     </Field>
                   </div>
+
+                  <Field label="Demo notes">
+                    <textarea
+                      disabled={closed}
+                      rows={3}
+                      value={demo.demoNotes}
+                      onChange={(e) => setDemo((d) => ({ ...d, demoNotes: e.target.value }))}
+                      placeholder="Notes for the demo"
+                      className={inputClass}
+                    />
+                  </Field>
 
                   {isOffline && (
                     <>
@@ -424,20 +455,51 @@ export default function LeadDetails() {
             )}
 
             {/* Convert to sales */}
-            {canManage && ["DEMO_SCHEDULED", "QUOTATION_SENT"].includes(lead.status) && (
-              <Card title="Convert to sales" subtitle="Lead agreed? Move it to sales, then create the project.">
-                <PrimaryButton
-                  disabled={busy}
-                  onClick={async () => {
-                    const res = await run(
-                      () => api.post(`/leads/${id}/convert-sales`),
-                      "Converted to sales",
-                    );
-                    if (res) load();
-                  }}
-                >
-                  Convert to sales
-                </PrimaryButton>
+            {showConvertSales && (
+              <Card
+                title="Convert to sales"
+                subtitle={
+                  lead.quotationSentAt
+                    ? "Quotation sent. Lead agreed? Add a note and move it to sales."
+                    : "Demo done. Lead agreed? Add a note and move it to sales."
+                }
+              >
+                <div className="space-y-4">
+                  <Field label="Notes" required>
+                    <textarea
+                      rows={4}
+                      value={salesNotes}
+                      onChange={(e) => setSalesNotes(e.target.value)}
+                      placeholder="What did the lead agree to? Price, timeline, next steps..."
+                      className={inputClass}
+                    />
+                  </Field>
+                  <PrimaryButton
+                    disabled={busy}
+                    onClick={async () => {
+                      if (!salesNotes.trim()) return toast.error("Type a note before converting to sales");
+                      const res = await run(
+                        () => api.post(`/leads/${id}/convert-sales`, { notes: salesNotes }),
+                        "Converted to sales",
+                      );
+                      if (res) {
+                        setSalesNotes("");
+                        load();
+                      }
+                    }}
+                  >
+                    Convert to sales
+                  </PrimaryButton>
+                </div>
+              </Card>
+            )}
+
+            {["SALES", "PROJECT"].includes(lead.status) && lead.salesNotes && (
+              <Card title="Sales notes">
+                <p className="whitespace-pre-wrap text-slate-700">{lead.salesNotes}</p>
+                {lead.salesAt && (
+                  <p className="mt-2 text-xs text-slate-400">Converted on {fmtDate(lead.salesAt)}</p>
+                )}
               </Card>
             )}
 
@@ -452,7 +514,7 @@ export default function LeadDetails() {
 
             {lead.status === "PROJECT" && lead.project && (
               <Card title="Project">
-                <PrimaryButton onClick={() => navigate(`/projects/${lead.project}`)}>
+                <PrimaryButton onClick={() => navigate(`/projects?edit=${lead.project}`)}>
                   Open project
                 </PrimaryButton>
               </Card>
@@ -465,6 +527,7 @@ export default function LeadDetails() {
                 <Info label="Company" value={lead.company} />
                 <Info label="Email" value={lead.email} />
                 <Info label="Phone" value={lead.phone} />
+                <Info label="WhatsApp" value={lead.whatsapp} />
                 <Info label="Source" value={nice(lead.source)} />
                 <Info label="Priority" value={nice(lead.priority)} />
                 <Info label="Expected value" value={lead.value ? fmtMoney(lead.value) : ""} />
@@ -491,7 +554,7 @@ export default function LeadDetails() {
                   () => api.post(`/leads/${id}/convert-project`, project),
                   "Project created",
                 );
-                if (res) navigate(`/projects/${res.data.project._id}`);
+                if (res) navigate(`/projects?edit=${res.data.project._id}`);
               }}
             >
               Create Project

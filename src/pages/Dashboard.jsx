@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { RefreshCw, Download, ArrowUpRight, IndianRupee, Users, FolderKanban, Building2, Clock, CalendarDays, Plus, FileText, UserPlus, Mail, Settings, TriangleAlert } from "lucide-react";
+import { RefreshCw, Download, ArrowUpRight, IndianRupee, Users, FolderKanban, Building2, Clock, CalendarDays, Plus, FileText, UserPlus, Mail, Settings, TriangleAlert, ShoppingBag } from "lucide-react";
 import { BarChart, Bar, AreaChart, Area, PieChart, Pie, Cell, LabelList, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import toast from "react-hot-toast";
 import Layout from "../components/Layout";
 import api from "../api/axios";
+import { NOTIFICATIONS_CHANGED, notifyNotificationsChanged } from "../utils/notificationEvents";
 import { EmptyState, Badge, PrimaryButton, GhostButton } from "../components/ui";
 import { PageSkeleton } from "../components/PageSkeleton";
 import { SectionCard } from "../components/dashboard/parts";
@@ -85,17 +86,33 @@ export default function Dashboard() {
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+    window.addEventListener(NOTIFICATIONS_CHANGED, load);
+    return () => window.removeEventListener(NOTIFICATIONS_CHANGED, load);
+  }, [load]);
 
   const refresh = async () => { setSpin(true); await load(); setSpin(false); };
 
   const markRead = async () => {
     try {
       await api.patch("/notifications/read-all");
-      load();
+      notifyNotificationsChanged();
     } catch (e) {
       toast.error(apiError(e, "Failed to update"));
     }
+  };
+
+  const openNotification = async (n) => {
+    if (!n.read) {
+      try {
+        await api.patch(`/notifications/${n._id}/read`);
+        notifyNotificationsChanged();
+      } catch (e) {
+        toast.error(apiError(e, "Failed to mark notification as read"));
+      }
+    }
+    navigate(n.link || "/notifications");
   };
 
   const first = user?.name?.split(" ")[0] || "there";
@@ -130,7 +147,7 @@ export default function Dashboard() {
 
   const actions = [
     { label: "Add Lead", sub: "Capture a new enquiry", to: "/add-lead", perm: "leads.manage", icon: <UserPlus size={21} />, tint: "bg-violet-50 text-violet-500" },
-    { label: "Create Invoice", sub: "Bill a client", to: "/finance/invoices", perm: "invoices.manage", icon: <FileText size={21} />, tint: "bg-emerald-50 text-emerald-500" },
+    { label: "Create Invoice", sub: "Bill a client", to: "/finance/invoices/new", perm: "invoices.manage", icon: <FileText size={21} />, tint: "bg-emerald-50 text-emerald-500" },
     { label: can("projecttasks.manage") ? "Assign Task" : "Add Task", sub: "Plan the work", to: can("projecttasks.manage") ? "/pm/tasks" : "/my-work", perm: can("projecttasks.manage") ? "projecttasks.manage" : "mywork.view", icon: <Plus size={21} />, tint: "bg-amber-50 text-amber-500" },
     { label: "Add Event", sub: "Schedule a meeting", to: "/calendar", perm: "calendar.view", icon: <CalendarDays size={21} />, tint: "bg-cyan-50 text-cyan-500" },
     { label: "Email Campaign", sub: "Send to your leads", to: "/campaigns", perm: "campaigns.manage", icon: <Mail size={21} />, tint: "bg-pink-50 text-pink-500" },
@@ -178,11 +195,12 @@ export default function Dashboard() {
 
         {chips.length > 0 && <div className="flex flex-wrap gap-3">{chips.map((c) => <Link key={c.text} to={c.to} className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold ${chipTone[c.tone]}`}>{c.icon}{c.text}</Link>)}</div>}
 
-        {(S.customers || S.projects || S.leads || S.finance) && (
+        {(S.customers || S.projects || S.leads || S.finance || S.products) && (
           <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
             {S.customers && <SummaryCard title="Customers" icon={<Building2 size={22} />} color="violet" to="/crm/customers" tiles={[{ label: "New customers (30 days)", value: S.customers.new, tone: "text-violet-600" }, { label: "Existing customers", value: S.customers.existing }]} />}
             {S.projects && <SummaryCard title="Projects" icon={<FolderKanban size={22} />} color="amber" to="/projects" tiles={[{ label: "Ongoing projects", value: S.projects.ongoing, tone: "text-indigo-600" }, { label: "Completed", value: S.projects.completed, tone: "text-emerald-600" }, { label: "On hold", value: S.projects.hold, tone: "text-amber-600" }]} />}
             {S.leads && <SummaryCard title="Leads" icon={<Users size={22} />} color="emerald" to="/leads" tiles={[{ label: "New leads (30 days)", value: S.leads.new, tone: "text-emerald-600" }, { label: "Follow-ups pending", value: S.leads.followUps, tone: "text-amber-600" }]} />}
+            {S.products && <SummaryCard title="Products" icon={<ShoppingBag size={22} />} color="amber" to="/products" tiles={[{ label: "Active products", value: S.products.active, tone: "text-emerald-600" }, { label: "Drafts", value: S.products.draft, tone: "text-amber-600" }, { label: "Total", value: S.products.total }]} />}
             {S.finance && <SummaryCard title="Finance" icon={<IndianRupee size={22} />} color="indigo" to="/finance/dashboard" tiles={[{ label: "Ongoing project value", value: fmtShort(S.finance.ongoingValue), tone: "text-indigo-600" }, { label: "Completed project value", value: fmtShort(S.finance.completedValue), tone: "text-emerald-600" }]} />}
           </div>
         )}
@@ -325,7 +343,7 @@ export default function Dashboard() {
               <ul className="divide-y divide-slate-100 -my-3">{d.notifications.latest.map((n) => {
                 const m = typeMeta(n.type); const Icon = m.icon;
                 return (
-                  <li key={n._id}><button onClick={() => navigate(n.link || "/notifications")} className="w-full flex items-start gap-4 py-4 text-left">
+                  <li key={n._id}><button onClick={() => openNotification(n)} className="w-full flex items-start gap-4 py-4 text-left cursor-pointer">
                     <span className={`h-12 w-12 shrink-0 rounded-xl flex items-center justify-center ${m.tint}`}><Icon size={20} /></span>
                     <span className="min-w-0 flex-1"><span className="flex items-center gap-2"><span className={`font-bold ${n.read ? "text-slate-600" : "text-slate-900"}`}>{n.title}</span>{!n.read && <span className="h-2 w-2 rounded-full bg-brand" />}</span>{n.message && <span className="block text-slate-500 truncate">{n.message}</span>}<span className="mt-1 flex items-center gap-1.5 text-sm text-slate-400"><Clock size={13} /> {timeAgo(n.createdAt)}</span></span>
                   </button></li>

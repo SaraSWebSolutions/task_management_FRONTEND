@@ -4,6 +4,7 @@ import ReactDOM from "react-dom/client";
 import "./index.css";
 
 import App from "./App";
+import { ThemeProvider } from "./theme/ThemeProvider";
 
 import {
   BrowserRouter,
@@ -18,7 +19,7 @@ ReactDOM.createRoot(
 ).render(
   <Provider store={store}>
     <BrowserRouter>
-      <App />
+      <ThemeProvider><App /></ThemeProvider>
     </BrowserRouter>
   </Provider>
 );

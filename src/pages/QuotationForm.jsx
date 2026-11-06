@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { Plus, Trash2, Save, Printer, Mail, MessageCircle, Copy, UserPlus, FolderKanban } from "lucide-react";
+import { Save, Printer, Mail, MessageCircle, Copy, UserPlus, FolderKanban } from "lucide-react";
 import toast from "react-hot-toast";
 import Layout from "../components/Layout";
 import api from "../api/axios";
-import { PageHeader, Card, Field, Spinner, PrimaryButton, GhostButton, IconButton, Modal, inputClass } from "../components/ui";
+import { PageHeader, Field, Spinner, PrimaryButton, GhostButton, Modal, inputClass } from "../components/ui";
+import { docInput, MiniField, PartyBox, LineItems, TotalsBox, AddBlock, CustomFields, LogoBox, Section } from "../components/billing/DocParts";
+import { printDocument, amountInWords, pickLogo, withCustomMeta } from "../utils/billingDoc";
 import { Pill } from "../components/analytics/parts";
 import { fmtMoney, fmtDate } from "../utils/format";
 import { LEAD_SOURCES } from "../constants/leadSources";
@@ -23,11 +25,15 @@ const inDays = (n) => {
 
 const DEFAULT_TERMS = "50% advance to start the work, balance on delivery.\nPrices are in INR and valid until the date above.";
 
+const blankItem = () => ({ type: "SERVICE", product: "", hsn: "", uom: "", description: "", qty: 1, rate: "" });
+
 const emptyForm = () => ({
   customer: { name: "", company: "", email: "", phone: "", address: "" },
   lead: "",
   date: ymd(new Date()),
-  items: [{ description: "", qty: 1, rate: "" }],
+  items: [blankItem()],
+  customFields: [],
+  logo: "",
   discount: "",
   taxPercent: 18,
   validUntil: inDays(15),
@@ -43,90 +49,7 @@ const calc = (f) => {
   return { items, subtotal, discount, tax, total: subtotal - discount + tax };
 };
 
-// Only the quotation sheet is printed / saved as PDF
-const PRINT_CSS = `
-@media print {
-  body * { visibility: hidden !important; }
-  #quotation-print, #quotation-print * { visibility: visible !important; }
-  #quotation-print { position: absolute; left: 0; top: 0; width: 100%; border: none !important; box-shadow: none !important; }
-}`;
-
-function Sheet({ form, number, totals }) {
-  const c = form.customer;
-  return (
-    <div id="quotation-print" className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8 text-left text-slate-800 text-sm">
-      <style>{PRINT_CSS}</style>
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <img src={logo} alt="SaraS" className="h-12 object-contain" />
-          <p className="mt-2 font-semibold">SaraS Web Solutions</p>
-        </div>
-        <div className="text-right">
-          <p className="text-2xl font-bold text-slate-900">QUOTATION</p>
-          <p className="mt-1 text-slate-500">{number || "Number is given on save"}</p>
-          <p className="text-slate-500">Date: {fmtDate(form.date)}</p>
-          {form.validUntil && <p className="text-slate-500">Valid until: {fmtDate(form.validUntil)}</p>}
-        </div>
-      </div>
-
-      <div className="mt-6 rounded-xl bg-slate-50 p-4">
-        <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Quotation for</p>
-        <p className="mt-1 font-semibold text-slate-900">{c.name || "Customer name"}</p>
-        {c.company && <p>{c.company}</p>}
-        {c.address && <p className="whitespace-pre-line">{c.address}</p>}
-        {(c.email || c.phone) && <p className="text-slate-500">{[c.email, c.phone].filter(Boolean).join(" · ")}</p>}
-      </div>
-
-      <table className="mt-6 w-full text-left">
-        <thead>
-          <tr className="bg-slate-100 text-xs uppercase tracking-wider text-slate-500">
-            <th className="p-2.5">#</th>
-            <th className="p-2.5">Item</th>
-            <th className="p-2.5 text-right">Qty</th>
-            <th className="p-2.5 text-right">Rate</th>
-            <th className="p-2.5 text-right">Amount</th>
-          </tr>
-        </thead>
-        <tbody>
-          {totals.items.map((i, n) => (
-            <tr key={n} className="border-b border-slate-100">
-              <td className="p-2.5">{n + 1}</td>
-              <td className="p-2.5">{i.description}</td>
-              <td className="p-2.5 text-right">{i.qty}</td>
-              <td className="p-2.5 text-right">{fmtMoney(i.rate)}</td>
-              <td className="p-2.5 text-right">{fmtMoney((Number(i.qty) || 0) * (Number(i.rate) || 0))}</td>
-            </tr>
-          ))}
-          {!totals.items.length && (
-            <tr><td colSpan={5} className="p-6 text-center text-slate-400">Items you add will appear here.</td></tr>
-          )}
-        </tbody>
-      </table>
-
-      <div className="mt-4 ml-auto w-full max-w-xs space-y-1.5">
-        <div className="flex justify-between"><span className="text-slate-500">Subtotal</span><span>{fmtMoney(totals.subtotal)}</span></div>
-        {totals.discount > 0 && (
-          <div className="flex justify-between"><span className="text-slate-500">Discount</span><span>-{fmtMoney(totals.discount)}</span></div>
-        )}
-        {Number(form.taxPercent) > 0 && (
-          <div className="flex justify-between"><span className="text-slate-500">Tax ({form.taxPercent}%)</span><span>{fmtMoney(totals.tax)}</span></div>
-        )}
-        <div className="flex justify-between border-t border-slate-200 pt-2 text-base font-bold text-slate-900">
-          <span>Total</span><span>{fmtMoney(totals.total)}</span>
-        </div>
-      </div>
-
-      {form.terms && (
-        <div className="mt-6">
-          <p className="font-semibold text-slate-900">Terms</p>
-          <p className="mt-1 whitespace-pre-line text-slate-600">{form.terms}</p>
-        </div>
-      )}
-      {form.notes && <p className="mt-4 whitespace-pre-line text-slate-600">{form.notes}</p>}
-      <p className="mt-8 text-slate-500">Thank you for your business.</p>
-    </div>
-  );
-}
+const logoUrl = () => new URL(logo, window.location.origin).href;
 
 export default function QuotationForm() {
   const { id } = useParams();
@@ -157,7 +80,9 @@ export default function QuotationForm() {
             customer: { name: q.customer?.name || "", company: q.customer?.company || "", email: q.customer?.email || "", phone: q.customer?.phone || "", address: q.customer?.address || "" },
             lead: q.lead || "",
             date: ymd(q.date),
-            items: q.items.map((i) => ({ description: i.description, qty: i.qty, rate: i.rate })),
+            items: q.items.map((i) => ({ type: i.type || "SERVICE", product: i.product || "", hsn: i.hsn || "", uom: i.uom || "", description: i.description, qty: i.qty, rate: i.rate })),
+            customFields: q.customFields || [],
+            logo: q.logo || "",
             discount: q.discount || "",
             taxPercent: q.taxPercent,
             validUntil: q.validUntil ? ymd(q.validUntil) : "",
@@ -173,7 +98,7 @@ export default function QuotationForm() {
           if (lead.quotationSource === "FORM" && lead.quotation?.items?.length) {
             const real = lead.quotation.items.filter((i) => i.rate >= 0);
             const disc = lead.quotation.items.find((i) => i.rate < 0);
-            f.items = real.map((i) => ({ description: i.description, qty: i.qty, rate: i.rate }));
+            f.items = real.map((i) => ({ ...blankItem(), description: i.description, qty: i.qty, rate: i.rate }));
             f.discount = disc ? Math.abs(disc.rate) : "";
             f.taxPercent = lead.quotation.taxPercent ?? 18;
             f.validUntil = lead.quotation.validUntil ? ymd(lead.quotation.validUntil) : f.validUntil;
@@ -208,9 +133,22 @@ export default function QuotationForm() {
   const addItem = (item) =>
     setForm((f) => {
       const blank = f.items.length === 1 && !f.items[0].description && !f.items[0].rate;
-      const next = item || { description: "", qty: 1, rate: "" };
+      const next = item || blankItem();
       return { ...f, items: blank ? [next] : [...f.items, next] };
     });
+  // Products dropdown: our products + plans / services from the catalog
+  const products = useMemo(
+    () => catalog.map((c) => ({ _id: c.product || c.label, product: c.product, name: c.label, price: c.rate, type: c.product ? c.type : "SERVICE", hsn: c.hsn, uom: c.uom, taxPercent: c.taxPercent })),
+    [catalog],
+  );
+  const pickProduct = (n, p) => {
+    setForm((f) => ({
+      ...f,
+      // products carry their own tax %; the quotation has one tax % for the whole sheet
+      taxPercent: p.taxPercent > 0 ? p.taxPercent : f.taxPercent,
+      items: f.items.map((it, i) => (i === n ? { ...it, description: p.name, product: p.product || "", type: p.type || "SERVICE", hsn: p.hsn || "", uom: p.uom || "", rate: p.price } : it)),
+    }));
+  };
   const removeItem = (n) =>
     setForm((f) => ({ ...f, items: f.items.length > 1 ? f.items.filter((_, i) => i !== n) : f.items }));
 
@@ -277,7 +215,7 @@ export default function QuotationForm() {
     });
     toast.success(res.data.message);
     setConvert(null);
-    if (convert === "PROJECT") return navigate(`/projects/${res.data.project._id}`);
+    if (convert === "PROJECT") return navigate(`/projects?edit=${res.data.project._id}`);
     const q = (await api.get(`/quotations/${saved._id}`)).data.quotation;
     setSaved(q);
     setForm((f) => ({ ...f, lead: q.lead || "" }));
@@ -286,7 +224,28 @@ export default function QuotationForm() {
   const onPrint = guard(async () => {
     const q = await save(true);
     await api.post(`/quotations/${q._id}/sent`, { via: "PDF" }).then((r) => setSaved(r.data.quotation));
-    setTimeout(() => window.print(), 100);
+    const c = form.customer;
+    const ok = printDocument({
+      title: "Quotation",
+      number: q.number,
+      meta: withCustomMeta([["Quotation No", q.number], ["Quotation Date", fmtDate(form.date)], ["Valid Until", form.validUntil ? fmtDate(form.validUntil) : ""]], form.customFields),
+      fromTitle: "Quotation By",
+      from: { name: "SaraS Web Solutions", lines: [] },
+      toTitle: "Quotation For",
+      to: { name: c.name, lines: [c.company, c.address, [c.email, c.phone].filter(Boolean).join(" · ")] },
+      items: totals.items,
+      totals: [
+        ["Subtotal", fmtMoney(totals.subtotal)],
+        ...(totals.discount > 0 ? [["Discount", `-${fmtMoney(totals.discount)}`]] : []),
+        ...(Number(form.taxPercent) > 0 ? [[`Tax (${form.taxPercent}%)`, fmtMoney(totals.tax)]] : []),
+        ["Total", fmtMoney(totals.total), true],
+      ],
+      words: amountInWords(totals.total),
+      terms: form.terms,
+      notes: form.notes,
+      logo: pickLogo(form.logo, logoUrl()),
+    });
+    if (!ok) throw new Error("Allow pop-ups to download the PDF");
   });
 
   const onWhatsapp = guard(async () => {
@@ -318,125 +277,106 @@ export default function QuotationForm() {
 
   if (loading) return <Layout><PageHeader title="Quotation" breadcrumbs={crumbs} /><Spinner /></Layout>;
 
+  const c = form.customer;
+
+  const actions = (
+    <>
+      {form.lead && <GhostButton className="!py-2" onClick={() => navigate(`/leads/${form.lead}`)}>Open lead</GhostButton>}
+      {saved && <Pill tone={saved.status === "SENT" ? "green" : "slate"}>{saved.status === "SENT" ? "Shared" : "Draft"}</Pill>}
+    </>
+  );
+
   return (
     <Layout>
-      <div className="space-y-6 pb-12">
-        <PageHeader
-          title={saved ? `Quotation ${saved.number}` : "New Quotation"}
-          breadcrumbs={crumbs}
-          actions={
-            <>
-              {form.lead && <GhostButton onClick={() => navigate(`/leads/${form.lead}`)}>Open lead</GhostButton>}
-              {saved && <Pill tone={saved.status === "SENT" ? "green" : "slate"}>{saved.status === "SENT" ? "Shared" : "Draft"}</Pill>}
-            </>
-          }
-        />
+      <div className="mx-auto max-w-6xl space-y-4 pb-12">
+        <PageHeader title={saved ? `Quotation ${saved.number}` : "New Quotation"} breadcrumbs={crumbs} actions={actions} />
 
-        <div className="grid gap-6 xl:grid-cols-2 items-start">
-          {/* ---- form ---- */}
-          <div className="space-y-6">
-            <Card title="Customer">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Name" required><input value={form.customer.name} onChange={setCustomer("name")} className={inputClass} /></Field>
-                <Field label="Company"><input value={form.customer.company} onChange={setCustomer("company")} className={inputClass} /></Field>
-                <Field label="Email"><input type="email" value={form.customer.email} onChange={setCustomer("email")} className={inputClass} /></Field>
-                <Field label="Phone / WhatsApp"><input value={form.customer.phone} onChange={setCustomer("phone")} className={inputClass} placeholder="10 digit number" /></Field>
-                <div className="sm:col-span-2">
-                  <Field label="Address"><textarea rows={2} value={form.customer.address} onChange={setCustomer("address")} className={inputClass} /></Field>
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          {/* title, dates, logo */}
+          <Section className="flex flex-wrap items-start justify-between gap-5">
+            <div className="min-w-0 flex-1 text-left">
+              <p className="text-2xl font-bold text-brand">Quotation</p>
+              <div className="mt-3 grid max-w-xl grid-cols-1 gap-3 sm:grid-cols-3">
+                <MiniField label="Quotation No"><input readOnly value={saved?.number || "On save"} className={`${docInput} !bg-slate-50`} /></MiniField>
+                <MiniField label="Date"><input type="date" value={form.date} onChange={setField("date")} className={docInput} /></MiniField>
+                <MiniField label="Valid Until"><input type="date" value={form.validUntil} onChange={setField("validUntil")} className={docInput} /></MiniField>
+              </div>
+              <div className="mt-3"><CustomFields fields={form.customFields} onChange={(v) => setForm((f) => ({ ...f, customFields: v }))} /></div>
+            </div>
+            <LogoBox value={form.logo} defaultLogo={logo} onChange={(v) => setForm((f) => ({ ...f, logo: v }))} />
+          </Section>
+
+          {/* from / for */}
+          <Section className="grid gap-4 md:grid-cols-5">
+            <div className="md:col-span-2">
+              <PartyBox title="Quotation By">
+                <p className="font-bold text-slate-900">SaraS Web Solutions</p>
+                <p className="mt-1 text-sm text-slate-500">Your company details shown on the quotation.</p>
+              </PartyBox>
+            </div>
+            <div className="md:col-span-3">
+              <PartyBox title="Quotation For (Customer)">
+                <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                  <MiniField label="Name" required><input value={c.name} onChange={setCustomer("name")} className={docInput} /></MiniField>
+                  <MiniField label="Company"><input value={c.company} onChange={setCustomer("company")} className={docInput} /></MiniField>
+                  <MiniField label="Email"><input type="email" value={c.email} onChange={setCustomer("email")} className={docInput} /></MiniField>
+                  <MiniField label="Phone / WhatsApp"><input value={c.phone} onChange={setCustomer("phone")} className={docInput} placeholder="10 digit number" /></MiniField>
+                  <MiniField label="Address" className="sm:col-span-2"><input value={c.address} onChange={setCustomer("address")} className={docInput} /></MiniField>
                 </div>
-              </div>
-            </Card>
+              </PartyBox>
+            </div>
+          </Section>
 
-            <Card
-              title="Items"
-              action={
-                catalog.length > 0 && (
-                  <select
-                    value=""
-                    onChange={(e) => {
-                      const it = catalog[e.target.value];
-                      if (it) addItem({ description: it.description, qty: 1, rate: it.rate });
-                    }}
-                    className={`${inputClass} w-auto`}
-                  >
-                    <option value="">+ Add plan / service</option>
-                    {catalog.map((c, i) => (
-                      <option key={c.label} value={i}>{c.label} · {fmtMoney(c.rate)}</option>
-                    ))}
-                  </select>
-                )
-              }
-            >
-              <div className="space-y-3">
-                {form.items.map((it, n) => (
-                  <div key={n} className="grid grid-cols-[1fr_5rem_8rem_auto] gap-2 items-center">
-                    <input placeholder="Item / description" value={it.description} onChange={(e) => setItem(n, "description", e.target.value)} className={inputClass} />
-                    <input type="number" min="0" placeholder="Qty" value={it.qty} onChange={(e) => setItem(n, "qty", e.target.value)} className={inputClass} />
-                    <input type="number" min="0" placeholder="Rate" value={it.rate} onChange={(e) => setItem(n, "rate", e.target.value)} className={inputClass} />
-                    <IconButton tone="danger" aria-label="Remove item" onClick={() => removeItem(n)}><Trash2 size={15} /></IconButton>
-                  </div>
-                ))}
-              </div>
-              <GhostButton className="mt-4" onClick={() => addItem()}><Plus size={18} /> Add item</GhostButton>
+          {/* items */}
+          <Section>
+            <LineItems items={form.items} qtyKey="qty" onChange={setItem} onAdd={() => addItem()} onRemove={removeItem} products={products} onPickProduct={pickProduct} />
+          </Section>
 
-              <div className="mt-6 grid gap-4 sm:grid-cols-3">
-                <Field label="Discount (₹)"><input type="number" min="0" value={form.discount} onChange={setField("discount")} className={inputClass} /></Field>
-                <Field label="Tax %"><input type="number" min="0" value={form.taxPercent} onChange={setField("taxPercent")} className={inputClass} /></Field>
-                <Field label="Valid until"><input type="date" value={form.validUntil} onChange={setField("validUntil")} className={inputClass} /></Field>
-              </div>
-            </Card>
+          {/* notes + totals */}
+          <Section className="grid items-start gap-6 md:grid-cols-2">
+            <div className="space-y-3">
+              <AddBlock label="Add Terms and Conditions" value={form.terms} onChange={(v) => setForm((f) => ({ ...f, terms: v }))} rows={3} />
+              <AddBlock label="Add Notes" value={form.notes} onChange={(v) => setForm((f) => ({ ...f, notes: v }))} rows={2} />
+            </div>
+            <TotalsBox
+              total={totals.total}
+              rows={[
+                ["Amount", fmtMoney(totals.subtotal)],
+                ["Discount (₹)", <input key="d" type="number" min="0" value={form.discount} onChange={setField("discount")} placeholder="0" className={`${docInput} !w-28 text-right`} />],
+                ["Tax (%)", <input key="t" type="number" min="0" max="100" value={form.taxPercent} onChange={setField("taxPercent")} className={`${docInput} !w-28 text-right`} />],
+                ...(totals.tax > 0 ? [["Tax amount", fmtMoney(totals.tax)]] : []),
+              ]}
+            />
+          </Section>
 
-            <Card title="Terms and Notes">
-              <div className="space-y-4">
-                <Field label="Terms"><textarea rows={3} value={form.terms} onChange={setField("terms")} className={inputClass} /></Field>
-                <Field label="Notes"><textarea rows={2} value={form.notes} onChange={setField("notes")} className={inputClass} /></Field>
-              </div>
-            </Card>
-          </div>
+          {/* actions */}
+          {canManage && (
+            <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 bg-slate-50 px-5 py-3 sm:px-6">
+              <PrimaryButton disabled={busy} onClick={onSave} className="!py-2"><Save size={16} /> Save</PrimaryButton>
+              <GhostButton disabled={busy} onClick={onPrint} className="!py-2"><Printer size={16} /> Download PDF</GhostButton>
+              <GhostButton disabled={busy} onClick={onWhatsapp} className="!px-3 !py-2" title="Share on WhatsApp"><MessageCircle size={16} /></GhostButton>
+              <GhostButton disabled={busy} onClick={onEmail} className="!px-3 !py-2" title="Send by email"><Mail size={16} /></GhostButton>
+              <GhostButton disabled={busy} onClick={onCopy} className="!px-3 !py-2" title="Copy text"><Copy size={16} /></GhostButton>
 
-          {/* ---- preview + actions ---- */}
-          <div className="space-y-4 xl:sticky xl:top-4">
-            {canManage && (
-              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 flex flex-wrap gap-3">
-                <PrimaryButton disabled={busy} onClick={onSave}><Save size={18} /> Save</PrimaryButton>
-                <GhostButton disabled={busy} onClick={onPrint}><Printer size={18} /> Download PDF</GhostButton>
-                <GhostButton disabled={busy} onClick={onWhatsapp}><MessageCircle size={18} /> WhatsApp</GhostButton>
-                <GhostButton disabled={busy} onClick={onEmail}><Mail size={18} /> Email</GhostButton>
-                <GhostButton disabled={busy} onClick={onCopy}><Copy size={18} /> Copy text</GhostButton>
-              </div>
-            )}
-            {canManage && saved && (
-              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 flex flex-wrap items-center gap-3">
-                <span className="text-sm font-semibold text-slate-800 mr-auto">
-                  {leadInfo?.project
-                    ? "Converted to a project"
-                    : leadInfo
-                      ? "Linked to a lead"
-                      : "Not linked to a lead yet"}
-                </span>
-                {!saved.lead && (
-                  <GhostButton disabled={busy} onClick={() => openConvert("LEAD")}>
-                    <UserPlus size={18} /> Convert to Lead
-                  </GhostButton>
-                )}
-                {leadInfo?.project ? (
-                  <GhostButton onClick={() => navigate(`/projects/${leadInfo.project}`)}>
-                    <FolderKanban size={18} /> Open project
-                  </GhostButton>
-                ) : (
-                  leadInfo?.status !== "LOST" && (
-                    <PrimaryButton disabled={busy} onClick={() => openConvert("PROJECT")}>
-                      <FolderKanban size={18} /> Convert to Project
-                    </PrimaryButton>
-                  )
-                )}
-              </div>
-            )}
-            <Sheet form={form} number={saved?.number} totals={totals} />
-            <p className="text-xs text-slate-400">
-              Download PDF opens the print window: choose "Save as PDF" as the printer. Sharing marks the quotation as shared.
-            </p>
-          </div>
+              {saved && (
+                <div className="ml-auto flex flex-wrap items-center gap-2">
+                  <span className="text-xs font-semibold text-slate-500">
+                    {leadInfo?.project ? "Converted to a project" : leadInfo ? "Linked to a lead" : "Not linked to a lead"}
+                  </span>
+                  {!saved.lead && (
+                    <GhostButton disabled={busy} onClick={() => openConvert("LEAD")} className="!py-2"><UserPlus size={16} /> Convert to Lead</GhostButton>
+                  )}
+                  {leadInfo?.project ? (
+                    <GhostButton onClick={() => navigate(`/projects?edit=${leadInfo.project}`)} className="!py-2"><FolderKanban size={16} /> Open project</GhostButton>
+                  ) : (
+                    leadInfo?.status !== "LOST" && (
+                      <PrimaryButton disabled={busy} onClick={() => openConvert("PROJECT")} className="!py-2"><FolderKanban size={16} /> Convert to Project</PrimaryButton>
+                    )
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

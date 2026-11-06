@@ -1,67 +1,31 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Plus, Download, FileText, CircleCheck, Clock, TriangleAlert, Eye, Pencil, Trash2, Printer, Banknote, Ban, Send } from "lucide-react";
 import toast from "react-hot-toast";
 import Layout from "../components/Layout";
 import api from "../api/axios";
 import PaymentModal from "../components/finance/PaymentModal";
-import { PageHeader, Badge, Spinner, EmptyState, Modal, Field, PrimaryButton, GhostButton, DangerButton, IconButton, Pagination, SearchBox, inputClass } from "../components/ui";
+import { PageHeader, Badge, Spinner, EmptyState, Modal, PrimaryButton, GhostButton, DangerButton, IconButton, Pagination, SearchBox } from "../components/ui";
 import { KpiCard, SelectBox } from "../components/finance/bits";
 import { apiError, THEAD, TROW } from "../components/finance/helpers";
-import { INVOICE_STATUSES, invoiceStatusMeta, paymentStatusMeta, SERVICE_TYPES, methodLabel } from "../constants/finance";
-import { fmtDate, fmtMoney, fmtShort, downloadCsv, toDateInput } from "../utils/format";
+import { INVOICE_STATUSES, invoiceStatusMeta, paymentStatusMeta, methodLabel } from "../constants/finance";
+import { fmtDate, fmtMoney, fmtShort, downloadCsv } from "../utils/format";
+import { printInvoiceDoc } from "../utils/billingDoc";
+import logo from "../assets/logo.png";
 import { can, homePath } from "../utils/permissions";
 
 const PER_PAGE = 10;
-const addDays = (d, n) => new Date(new Date(d).getTime() + n * 86400000);
-const blankItem = () => ({ description: "", quantity: 1, rate: "" });
-
-// Same maths as the server (utils/finance.js calcInvoice), used for the live preview.
-const calc = ({ items, discount, taxRate, taxInclusive }) => {
-  const gross = items.reduce((s, i) => s + (Number(i.quantity) || 0) * (Number(i.rate) || 0), 0);
-  const after = Math.max(0, gross - (Number(discount) || 0));
-  const r = Number(taxRate) || 0;
-  if (taxInclusive) {
-    const subtotal = r ? after / (1 + r / 100) : after;
-    return { gross, subtotal, taxAmount: after - subtotal, total: after };
-  }
-  const taxAmount = (after * r) / 100;
-  return { gross, subtotal: after, taxAmount, total: after + taxAmount };
-};
-
-const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
-
-const printInvoice = (inv) => {
-  const w = window.open("", "_blank", "width=900,height=1000");
-  if (!w) return toast.error("Allow pop-ups to print");
-  const rows = inv.items
-    .map((i) => `<tr><td>${esc(i.description)}</td><td class="r">${i.quantity}</td><td class="r">${fmtMoney(i.rate)}</td><td class="r">${fmtMoney(i.quantity * i.rate)}</td></tr>`)
-    .join("");
-  w.document.write(`<html><head><title>${esc(inv.number)}</title><style>
-    body{font-family:Arial,sans-serif;color:#0f172a;padding:40px;max-width:800px;margin:auto}
-    h1{margin:0;font-size:28px} .m{color:#64748b;font-size:14px} table{width:100%;border-collapse:collapse;margin-top:24px}
-    th{text-align:left;background:#f8fafc;font-size:12px;text-transform:uppercase;color:#64748b;padding:10px} td{padding:10px;border-top:1px solid #e2e8f0}
-    .r{text-align:right} .t td{border:0;padding:4px 10px} .b{font-weight:bold;font-size:18px}
-  </style></head><body>
-    <h1>INVOICE</h1><p class="m">${esc(inv.number)}</p>
-    <p><strong>Bill to:</strong> ${esc(inv.clientName)}${inv.clientGstin ? `<br/>GSTIN: ${esc(inv.clientGstin)}` : ""}</p>
-    <p class="m">Issue date: ${fmtDate(inv.issueDate)} &nbsp;|&nbsp; Due date: ${fmtDate(inv.dueDate)}</p>
-    <table><thead><tr><th>Description</th><th class="r">Qty</th><th class="r">Rate</th><th class="r">Amount</th></tr></thead><tbody>${rows}</tbody></table>
-    <table class="t" style="width:50%;margin-left:auto">
-      ${inv.discount > 0 ? `<tr><td>Discount</td><td class="r">- ${fmtMoney(inv.discount)}</td></tr>` : ""}
-      <tr><td>Subtotal</td><td class="r">${fmtMoney(inv.subtotal)}</td></tr>
-      <tr><td>${esc(inv.taxLabel || "Tax")} (${inv.taxRate}%)</td><td class="r">${fmtMoney(inv.taxAmount)}</td></tr>
-      <tr class="b"><td>Total</td><td class="r">${fmtMoney(inv.total)}</td></tr>
-      <tr><td>Paid</td><td class="r">${fmtMoney(inv.paidAmount)}</td></tr>
-      <tr class="b"><td>Balance due</td><td class="r">${fmtMoney(inv.balance)}</td></tr>
-    </table>
-    ${inv.notes ? `<p class="m" style="margin-top:32px">${esc(inv.notes)}</p>` : ""}
-  </body></html>`);
-  w.document.close();
-  w.focus();
-  w.print();
+const printInvoice = (inv, settings = {}) => {
+  const ok = printInvoiceDoc(inv, {
+    name: settings.companyName,
+    gstin: settings.gstin,
+    logo: new URL(logo, window.location.origin).href,
+  });
+  if (!ok) toast.error("Allow pop-ups to print");
 };
 
 export default function FinanceInvoices() {
+  const navigate = useNavigate();
   const canManage = can("invoices.manage");
   const canPay = can("payments.manage");
 
@@ -70,11 +34,6 @@ export default function FinanceInvoices() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [page, setPage] = useState(1);
-
-  const [open, setOpen] = useState(false);
-  const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState(null);
-  const [saving, setSaving] = useState(false);
 
   const [view, setView] = useState(null); // { invoice, payments }
   const [payFor, setPayFor] = useState(null);
@@ -92,91 +51,6 @@ export default function FinanceInvoices() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
-
-  // Tax dropdown: "none", "default", an active tax rate id, or "custom" (an old invoice's own rate)
-  const taxChoices = useMemo(() => {
-    const list = [{ value: "none", label: "No tax", rate: 0 }];
-    if (options.settings.defaultTaxRate != null)
-      list.push({ value: "default", label: "Default GST", name: "GST", rate: options.settings.defaultTaxRate });
-    options.taxRates.forEach((r) => list.push({ value: r._id, label: r.region, rate: r.rate }));
-    return list;
-  }, [options]);
-
-  const resolveTax = (choice, f) => {
-    if (choice === "custom") return { taxLabel: f.taxLabel, taxRate: f.taxRate };
-    const c = taxChoices.find((x) => x.value === choice) || taxChoices[0];
-    return { taxLabel: c.value === "none" ? "" : c.name ?? c.label, taxRate: c.rate };
-  };
-
-  const openAdd = () => {
-    const auto = options.settings.autoCalculateTax !== false;
-    setEditing(null);
-    setForm({
-      client: "", clientName: "", clientGstin: "", project: "", serviceType: "OTHER",
-      issueDate: toDateInput(new Date()), dueDate: toDateInput(addDays(new Date(), 15)),
-      items: [blankItem()], discount: "", taxChoice: auto ? "default" : "none", taxLabel: "", taxRate: 0,
-      taxInclusive: !!options.settings.taxInclusive, status: "SENT", notes: "",
-    });
-    setOpen(true);
-  };
-
-  const openEdit = (inv) => {
-    const match = taxChoices.find((c) => (c.name ?? c.label) === inv.taxLabel && c.rate === inv.taxRate);
-    setEditing(inv);
-    setForm({
-      client: inv.client || "", clientName: inv.clientName, clientGstin: inv.clientGstin || "", project: inv.project?._id || "",
-      serviceType: inv.serviceType, issueDate: toDateInput(inv.issueDate), dueDate: toDateInput(inv.dueDate),
-      items: inv.items.map((i) => ({ ...i })), discount: inv.discount || "",
-      taxChoice: inv.taxRate ? (match ? match.value : "custom") : "none", taxLabel: inv.taxLabel || "", taxRate: inv.taxRate,
-      taxInclusive: inv.taxInclusive, status: inv.status, notes: inv.notes || "",
-    });
-    setOpen(true);
-  };
-
-  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
-  const setItem = (idx, k, v) => setForm((f) => ({ ...f, items: f.items.map((it, i) => (i === idx ? { ...it, [k]: v } : it)) }));
-
-  const pickClient = (e) => {
-    const c = options.clients.find((x) => x._id === e.target.value);
-    setForm((f) => ({ ...f, client: e.target.value, clientName: c ? c.companyName : f.clientName, clientGstin: c ? c.gstNumber || "" : f.clientGstin, serviceType: c?.basicType || f.serviceType }));
-  };
-
-  // Picking the project fills in the client it belongs to (matched by name)
-  const pickProject = (e) => {
-    const p = options.projects.find((x) => x._id === e.target.value);
-    const c = p?.clientName && options.clients.find((x) => x.companyName.trim().toLowerCase() === p.clientName.trim().toLowerCase());
-    setForm((f) => {
-      if (!p || f.client) return { ...f, project: e.target.value };
-      if (c) return { ...f, project: p._id, client: c._id, clientName: c.companyName, clientGstin: c.gstNumber || "", serviceType: c.basicType || f.serviceType };
-      return { ...f, project: p._id, clientName: f.clientName || p.clientName || "" };
-    });
-  };
-
-  const tax = form ? resolveTax(form.taxChoice, form) : { taxRate: 0 };
-  const totals = form ? calc({ ...form, taxRate: tax.taxRate }) : null;
-
-  const save = async () => {
-    if (!form.clientName.trim()) return toast.error("Select a client or enter a name");
-    if (!form.dueDate) return toast.error("Due date is required");
-    const items = form.items.filter((i) => i.description.trim());
-    if (!items.length) return toast.error("Add at least one line item");
-    if (items.some((i) => !(Number(i.quantity) > 0))) return toast.error("Quantity must be more than 0");
-    try {
-      setSaving(true);
-      const { taxChoice, ...rest } = form;
-      void taxChoice;
-      const body = { ...rest, ...tax, items, discount: Number(form.discount) || 0 };
-      if (editing) await api.put(`/finance/invoices/${editing._id}`, body);
-      else await api.post("/finance/invoices", body);
-      toast.success(editing ? "Invoice updated" : "Invoice created");
-      setOpen(false);
-      load();
-    } catch (error) {
-      toast.error(apiError(error, "Failed to save invoice"));
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const openView = async (inv) => {
     try {
@@ -231,7 +105,7 @@ export default function FinanceInvoices() {
           actions={
             <>
               <GhostButton onClick={exportCsv} disabled={!filtered.length}><Download size={18} /> Export CSV</GhostButton>
-              {canManage && <PrimaryButton onClick={openAdd}><Plus size={18} /> Create Invoice</PrimaryButton>}
+              {canManage && <PrimaryButton onClick={() => navigate("/finance/invoices/new")}><Plus size={18} /> Create Invoice</PrimaryButton>}
             </>
           }
         />
@@ -275,7 +149,7 @@ export default function FinanceInvoices() {
                               <td className="p-4"><Badge className={m.badge}>{m.label}</Badge></td>
                               <td className="p-4"><div className="flex gap-2">
                                 <IconButton onClick={() => openView(i)} aria-label="View"><Eye size={15} /></IconButton>
-                                {canManage && i.status !== "CANCELLED" && <IconButton onClick={() => openEdit(i)} aria-label="Edit"><Pencil size={15} /></IconButton>}
+                                {canManage && i.status !== "CANCELLED" && <IconButton onClick={() => navigate(`/finance/invoices/${i._id}/edit`)} aria-label="Edit"><Pencil size={15} /></IconButton>}
                                 {canManage && <IconButton tone="danger" onClick={() => setToDelete(i)} aria-label="Delete"><Trash2 size={15} /></IconButton>}
                               </div></td>
                             </tr>
@@ -292,84 +166,6 @@ export default function FinanceInvoices() {
         )}
       </div>
 
-      {/* Create / edit */}
-      <Modal
-        open={open}
-        wide
-        title={editing ? `Edit ${editing.number}` : "Create Invoice"}
-        onClose={() => setOpen(false)}
-        footer={<><GhostButton onClick={() => setOpen(false)}>Cancel</GhostButton><PrimaryButton disabled={saving} onClick={save}>{editing ? "Save Changes" : "Create Invoice"}</PrimaryButton></>}
-      >
-        {form && (
-          <div className="space-y-5">
-            <div className="grid sm:grid-cols-2 gap-5">
-              <Field label="Client">
-                <select value={form.client} onChange={pickClient} className={inputClass}>
-                  <option value="">Other (type a name)</option>
-                  {options.clients.map((c) => <option key={c._id} value={c._id}>{c.companyName}</option>)}
-                </select>
-              </Field>
-              <Field label="Bill to name" required><input value={form.clientName} onChange={set("clientName")} className={inputClass} /></Field>
-              <Field label="Client GSTIN"><input value={form.clientGstin} onChange={set("clientGstin")} className={inputClass} /></Field>
-              <Field label="Project">
-                <select value={form.project} onChange={pickProject} className={inputClass}>
-                  <option value="">No project</option>
-                  {options.projects.map((p) => <option key={p._id} value={p._id}>{p.name}</option>)}
-                </select>
-              </Field>
-              <Field label="Service type">
-                <select value={form.serviceType} onChange={set("serviceType")} className={inputClass}>
-                  {SERVICE_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-                </select>
-              </Field>
-              <Field label="Invoice status">
-                <select value={form.status} onChange={set("status")} className={inputClass}>
-                  <option value="SENT">Sent</option><option value="DRAFT">Draft</option>
-                </select>
-              </Field>
-              <Field label="Issue date" required><input type="date" value={form.issueDate} onChange={set("issueDate")} className={inputClass} /></Field>
-              <Field label="Due date" required><input type="date" value={form.dueDate} onChange={set("dueDate")} className={inputClass} /></Field>
-            </div>
-
-            <div>
-              <p className="text-sm font-semibold text-slate-800 mb-2">Line items *</p>
-              <div className="space-y-3">
-                {form.items.map((it, idx) => (
-                  <div key={idx} className="grid grid-cols-12 gap-3 items-center">
-                    <input value={it.description} onChange={(e) => setItem(idx, "description", e.target.value)} placeholder="Description" className={`${inputClass} col-span-12 sm:col-span-6`} />
-                    <input type="number" min="0" value={it.quantity} onChange={(e) => setItem(idx, "quantity", e.target.value)} placeholder="Qty" className={`${inputClass} col-span-4 sm:col-span-2`} />
-                    <input type="number" min="0" value={it.rate} onChange={(e) => setItem(idx, "rate", e.target.value)} placeholder="Rate" className={`${inputClass} col-span-6 sm:col-span-3`} />
-                    <IconButton tone="danger" className="col-span-2 sm:col-span-1" disabled={form.items.length === 1} onClick={() => setForm((f) => ({ ...f, items: f.items.filter((_, i) => i !== idx) }))} aria-label="Remove item"><Trash2 size={15} /></IconButton>
-                  </div>
-                ))}
-              </div>
-              <GhostButton className="mt-3 !py-2" onClick={() => setForm((f) => ({ ...f, items: [...f.items, blankItem()] }))}><Plus size={16} /> Add item</GhostButton>
-            </div>
-
-            <div className="grid sm:grid-cols-2 gap-5">
-              <Field label="Discount (₹)"><input type="number" min="0" value={form.discount} onChange={set("discount")} placeholder="0" className={inputClass} /></Field>
-              <Field label="Tax">
-                <select value={form.taxChoice} onChange={set("taxChoice")} className={inputClass}>
-                  {taxChoices.map((c) => <option key={c.value} value={c.value}>{c.value === "none" ? c.label : `${c.label} (${c.rate}%)`}</option>)}
-                  {form.taxChoice === "custom" && <option value="custom">{form.taxLabel || "Tax"} ({form.taxRate}%)</option>}
-                </select>
-              </Field>
-            </div>
-            <label className="flex items-center gap-3 text-slate-700 font-medium">
-              <input type="checkbox" checked={form.taxInclusive} onChange={(e) => setForm((f) => ({ ...f, taxInclusive: e.target.checked }))} /> Item prices already include tax
-            </label>
-
-            <div className="rounded-xl bg-slate-50 p-4 ml-auto sm:w-80 space-y-1.5 text-sm">
-              <div className="flex justify-between"><span className="text-slate-500">Subtotal</span><span>{fmtMoney(totals.subtotal)}</span></div>
-              <div className="flex justify-between"><span className="text-slate-500">Tax ({tax.taxRate}%)</span><span>{fmtMoney(totals.taxAmount)}</span></div>
-              <div className="flex justify-between text-lg font-bold pt-1.5 border-t border-slate-200"><span>Total</span><span>{fmtMoney(totals.total)}</span></div>
-            </div>
-
-            <Field label="Notes"><textarea rows={2} value={form.notes} onChange={set("notes")} placeholder="Payment terms, bank details..." className={inputClass} /></Field>
-          </div>
-        )}
-      </Modal>
-
       {/* View */}
       <Modal
         open={!!view}
@@ -381,7 +177,7 @@ export default function FinanceInvoices() {
             {canManage && view.invoice.status === "DRAFT" && <GhostButton onClick={() => setInvoiceStatus(view.invoice, "SENT")}><Send size={16} /> Mark as sent</GhostButton>}
             {canManage && view.invoice.status !== "CANCELLED" && view.invoice.paidAmount === 0 && <GhostButton onClick={() => setInvoiceStatus(view.invoice, "CANCELLED")}><Ban size={16} /> Cancel invoice</GhostButton>}
             {canManage && view.invoice.status === "CANCELLED" && <GhostButton onClick={() => setInvoiceStatus(view.invoice, "SENT")}>Reopen</GhostButton>}
-            <GhostButton onClick={() => printInvoice(view.invoice)}><Printer size={16} /> Print</GhostButton>
+            <GhostButton onClick={() => printInvoice(view.invoice, options.settings)}><Printer size={16} /> Print</GhostButton>
             {canPay && view.invoice.balance > 0 && view.invoice.status === "SENT" && (
               <PrimaryButton onClick={() => { setPayFor(view.invoice._id); setView(null); }}><Banknote size={16} /> Record payment</PrimaryButton>
             )}

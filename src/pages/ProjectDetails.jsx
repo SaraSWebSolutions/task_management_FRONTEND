@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, FolderKanban, ListTodo, Clock3, TrendingUp, CalendarDays, ExternalLink } from "lucide-react";
 import Layout from "../components/Layout";
 import api from "../api/axios";
 import toast from "react-hot-toast";
@@ -10,9 +10,9 @@ import { fmtDate, toDateInput } from "../utils/format";
 import { can } from "../utils/permissions";
 
 const input =
-  "w-full border border-slate-300 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-brand";
+  "w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-slate-800 dark:text-slate-100 outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20 disabled:cursor-not-allowed disabled:bg-slate-50 dark:bg-slate-800/60 disabled:opacity-70 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:disabled:bg-slate-800";
 const primaryBtn =
-  "rounded-xl bg-brand px-5 py-2.5 text-white transition hover:bg-brand-hover disabled:opacity-60";
+  "cursor-pointer rounded-xl bg-brand px-5 py-2.5 font-semibold text-white transition hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-60";
 
 const toRows = (list = []) =>
   list.map((e) => ({
@@ -46,14 +46,14 @@ function EntryEditor({ title, rows, setRows, users, withNote, onSave, saving }) 
     setRows((r) => r.map((row, idx) => (idx === i ? { ...row, [field]: value } : row)));
 
   return (
-    <div className="bg-white rounded-3xl border shadow-sm p-6 space-y-4">
-      <h2 className="text-xl font-semibold text-slate-800">{title}</h2>
+    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-5 sm:p-6 space-y-4">
+      <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-100">{title}</h2>
 
       {rows.length > 0 && (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-120 text-sm">
+          <table className="w-full min-w-[480px] text-sm text-slate-700 dark:text-slate-300">
             <thead>
-              <tr className="bg-slate-100">
+              <tr className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
                 <th className="p-3 text-left">Member</th>
                 <th className="p-3 text-center w-32">Hours</th>
                 {withNote && <th className="p-3 text-left">Note</th>}
@@ -63,7 +63,7 @@ function EntryEditor({ title, rows, setRows, users, withNote, onSave, saving }) 
             </thead>
             <tbody>
               {rows.map((row, i) => (
-                <tr key={i} className="border-t">
+                <tr key={i} className="border-t border-slate-100 dark:border-slate-800">
                   <td className="p-3">{row.name}</td>
                   <td className="p-3">
                     <input
@@ -93,7 +93,7 @@ function EntryEditor({ title, rows, setRows, users, withNote, onSave, saving }) 
                     {canManage && (
                       <button
                         onClick={() => setRows((r) => r.filter((_, idx) => idx !== i))}
-                        className="p-2 rounded-xl border border-red-200 text-red-600 hover:bg-red-50"
+                        aria-label="Remove member" className="cursor-pointer p-2 rounded-xl border border-red-200 text-red-600 hover:bg-red-50"
                       >
                         <Trash2 size={15} />
                       </button>
@@ -126,7 +126,7 @@ function EntryEditor({ title, rows, setRows, users, withNote, onSave, saving }) 
         />
         <button
           onClick={add}
-          className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 px-4 py-2 hover:bg-slate-100"
+          className="cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 dark:border-slate-700 px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 dark:bg-slate-800"
         >
           <Plus size={16} /> Add
         </button>
@@ -207,7 +207,7 @@ export default function ProjectDetails() {
   if (!project)
     return (
       <Layout>
-        <p className="text-center text-slate-500 mt-20">Loading...</p>
+        <p className="text-center text-slate-500 dark:text-slate-400 mt-20">Loading...</p>
       </Layout>
     );
 
@@ -217,7 +217,7 @@ export default function ProjectDetails() {
 
   const costRows = (list) =>
     list.map((e, i) => (
-      <tr key={i} className="border-t">
+      <tr key={i} className="border-t border-slate-100 dark:border-slate-800">
         <td className="p-3">{e.user?.name}</td>
         <td className="p-3 text-center">{e.hours}</td>
         <td className="p-3 text-center">{money(e.hourlyRate)}/hr</td>
@@ -227,66 +227,71 @@ export default function ProjectDetails() {
 
   return (
     <Layout>
-      <div className="max-w-4xl mx-auto pb-12 space-y-6">
-        <div className="bg-white rounded-3xl border shadow-sm p-6">
-          <div className="flex items-start gap-4">
+      <div className="w-full max-w-7xl mx-auto pb-12 space-y-6 text-left">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-5 sm:p-6">
+          <div className="flex flex-wrap items-start gap-4">
             <button
               onClick={() => navigate("/projects")}
-              className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200"
+              aria-label="Back to projects" className="cursor-pointer p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700"
             >
               <ArrowLeft size={20} />
             </button>
             <div>
-              <h1 className="text-3xl font-bold text-slate-800">{project.name}</h1>
-              <p className="text-slate-500 mt-1">Client: {project.clientName}</p>
+              <h1 className="text-2xl sm:text-3xl font-bold text-slate-800 dark:text-slate-100">{project.name}</h1>
+              <p className="text-slate-500 dark:text-slate-400 mt-1">Client: {project.clientName || "Not specified"}</p>
+              <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-medium">
+                <span className="rounded-full bg-violet-50 px-3 py-1 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300">{(project.status || "PLANNING").replaceAll("_", " ")}</span>
+                <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-1 text-slate-600 dark:text-slate-300">{project.priority || "MEDIUM"} priority</span>
+                {project.endDate && <span className="inline-flex items-center gap-1 text-slate-500 dark:text-slate-400"><CalendarDays size={13} /> Due {fmtDate(project.endDate)}</span>}
+              </div>
             </div>
           </div>
         </div>
 
         {/* Progress overview (tasks, hours, milestones) */}
         {overview && (
-          <div className="bg-white rounded-3xl border shadow-sm p-6 space-y-5">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-5 sm:p-6 space-y-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 className="text-xl font-semibold text-slate-800">Overview</h2>
+              <h2 className="flex items-center gap-2 text-xl font-semibold text-slate-800 dark:text-slate-100"><FolderKanban size={20} className="text-brand" /> Overview</h2>
               <div className="flex gap-2 text-sm">
-                {can("projecttasks.view") && <Link to="/pm/board" className="rounded-xl border border-slate-300 px-3 py-1.5 hover:bg-slate-100">Task board</Link>}
-                {can("milestones.view") && <Link to="/pm/milestones" className="rounded-xl border border-slate-300 px-3 py-1.5 hover:bg-slate-100">Milestones</Link>}
-                {can("timelogs.view") && <Link to="/pm/time" className="rounded-xl border border-slate-300 px-3 py-1.5 hover:bg-slate-100">Time tracking</Link>}
+                {can("projecttasks.view") && <Link to="/pm/board" className="cursor-pointer rounded-xl border border-slate-300 dark:border-slate-700 px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 dark:bg-slate-800">Task board</Link>}
+                {can("milestones.view") && <Link to="/pm/milestones" className="cursor-pointer rounded-xl border border-slate-300 dark:border-slate-700 px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 dark:bg-slate-800">Milestones</Link>}
+                {can("timelogs.view") && <Link to="/pm/time" className="cursor-pointer rounded-xl border border-slate-300 dark:border-slate-700 px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 dark:bg-slate-800">Time tracking</Link>}
               </div>
             </div>
 
-            <div className="grid sm:grid-cols-3 gap-4 text-center">
-              <div className="rounded-2xl bg-slate-50 p-4">
-                <p className="text-sm text-slate-500">Progress</p>
-                <p className="text-3xl font-bold text-slate-800">{project.progress}%</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="rounded-xl border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 p-4">
+                <p className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400"><TrendingUp size={16} /> Progress</p>
+                <p className="text-3xl font-bold text-slate-800 dark:text-slate-100">{project.progress}%</p>
               </div>
-              <div className="rounded-2xl bg-slate-50 p-4">
-                <p className="text-sm text-slate-500">Tasks done</p>
-                <p className="text-3xl font-bold text-slate-800">{overview.tasks.done}/{overview.tasks.total}</p>
+              <div className="rounded-xl border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 p-4">
+                <p className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400"><ListTodo size={16} /> Tasks done</p>
+                <p className="text-3xl font-bold text-slate-800 dark:text-slate-100">{overview.tasks.done}/{overview.tasks.total}</p>
               </div>
-              <div className="rounded-2xl bg-slate-50 p-4">
-                <p className="text-sm text-slate-500">Hours logged</p>
-                <p className="text-3xl font-bold text-slate-800">{Math.round(overview.loggedHours * 10) / 10}h</p>
+              <div className="rounded-xl border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 p-4">
+                <p className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400"><Clock3 size={16} /> Hours logged</p>
+                <p className="text-3xl font-bold text-slate-800 dark:text-slate-100">{Math.round(overview.loggedHours * 10) / 10}h</p>
               </div>
             </div>
 
             <div>
-              <p className="font-medium text-slate-700 mb-3">Milestone progress</p>
+              <p className="font-medium text-slate-700 dark:text-slate-300 mb-3">Milestone progress</p>
               {overview.milestones.length === 0 ? (
-                <p className="text-sm text-slate-500">No milestones yet.</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">No milestones yet.</p>
               ) : (
                 <div className="space-y-4">
                   {overview.milestones.map((m) => (
                     <div key={m._id}>
                       <div className="flex items-center justify-between text-sm">
-                        <span className="font-medium text-slate-800">
+                        <span className="font-medium text-slate-800 dark:text-slate-100">
                           {m.title}{" "}
                           <span className={`ml-2 rounded-md px-2 py-0.5 text-xs ${milestoneStatusMeta(m.status).badge}`}>{milestoneStatusMeta(m.status).label}</span>
                         </span>
-                        <span className="text-slate-500">{fmtDate(m.dueDate)}</span>
+                        <span className="text-slate-500 dark:text-slate-400">{fmtDate(m.dueDate)}</span>
                       </div>
-                      <div className="mt-1.5 h-2 rounded-full bg-slate-100">
-                        <div className="h-2 rounded-full" style={{ width: `${m.progress}%`, background: milestoneStatusMeta(m.status).bar }} />
+                      <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                        <div className="h-2 rounded-full" style={{ width: `${Math.max(0, Math.min(100, Number(m.progress) || 0))}%`, background: milestoneStatusMeta(m.status).bar }} />
                       </div>
                       <p className="mt-1 text-xs text-slate-400">{m.progress}% complete</p>
                     </div>
@@ -298,14 +303,14 @@ export default function ProjectDetails() {
         )}
 
         {/* Details */}
-        <div className="bg-white rounded-3xl border shadow-sm p-6 space-y-4">
-          <h2 className="text-xl font-semibold text-slate-800">Project details</h2>
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-5 sm:p-6 space-y-4">
+          <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-100">Project details</h2>
           <div className="grid md:grid-cols-2 gap-4">
-            <label className="text-sm font-medium text-slate-700">
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
               Name
               <input value={form.name} disabled={!canManage} onChange={set("name")} className={`${input} mt-2`} />
             </label>
-            <label className="text-sm font-medium text-slate-700">
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
               Status
               <select value={form.status} disabled={!canManage} onChange={set("status")} className={`${input} mt-2`}>
                 <option value="PLANNING">Planning</option>
@@ -314,11 +319,11 @@ export default function ProjectDetails() {
                 <option value="COMPLETED">Completed</option>
               </select>
             </label>
-            <label className="text-sm font-medium text-slate-700">
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
               Client name
               <input value={form.clientName} disabled={!canManage} onChange={set("clientName")} className={`${input} mt-2`} />
             </label>
-            <label className="text-sm font-medium text-slate-700">
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
               Priority
               <select value={form.priority} disabled={!canManage} onChange={set("priority")} className={`${input} mt-2`}>
                 <option value="HIGH">High</option>
@@ -326,27 +331,27 @@ export default function ProjectDetails() {
                 <option value="LOW">Low</option>
               </select>
             </label>
-            <label className="text-sm font-medium text-slate-700">
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
               Start date
               <input type="date" value={form.startDate} disabled={!canManage} onChange={set("startDate")} className={`${input} mt-2`} />
             </label>
-            <label className="text-sm font-medium text-slate-700">
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
               End date
               <input type="date" value={form.endDate} disabled={!canManage} onChange={set("endDate")} className={`${input} mt-2`} />
             </label>
-            <label className="text-sm font-medium text-slate-700 md:col-span-2">
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300 md:col-span-2">
               Description
               <textarea rows={3} value={form.description} disabled={!canManage} onChange={set("description")} className={`${input} mt-2`} />
             </label>
-            <label className="text-sm font-medium text-slate-700">
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
               Project value (original)
               <input type="number" min="0" value={form.projectValue} disabled={!canManage} onChange={set("projectValue")} className={`${input} mt-2`} />
             </label>
-            <label className="text-sm font-medium text-slate-700">
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
               Client estimation (hrs)
               <input type="number" min="0" value={form.clientEstimationHours} disabled={!canManage} onChange={set("clientEstimationHours")} className={`${input} mt-2`} />
             </label>
-            <label className="text-sm font-medium text-slate-700">
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
               Team estimation (hrs)
               <input type="number" min="0" value={form.teamEstimationHours} disabled={!canManage} onChange={set("teamEstimationHours")} className={`${input} mt-2`} />
             </label>
@@ -363,17 +368,17 @@ export default function ProjectDetails() {
         </div>
 
         {/* Marketing time (edited on the lead) */}
-        <div className="bg-white rounded-3xl border shadow-sm p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h2 className="text-xl font-semibold text-slate-800">Marketing time</h2>
-            <p className="text-sm text-slate-500 mt-1">
+            <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-100">Marketing time</h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
               {s.marketingHours} hrs · {money(s.marketingCost)} spent on marketing for this project
             </p>
           </div>
           {project.lead?._id && (
             <button
               onClick={() => navigate(`/leads/${project.lead._id}`)}
-              className="rounded-xl border border-slate-300 px-4 py-2 text-sm hover:bg-slate-100"
+              className="cursor-pointer rounded-xl border border-slate-300 dark:border-slate-700 px-4 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-800 dark:bg-slate-800"
             >
               Update marketing time
             </button>
@@ -400,12 +405,12 @@ export default function ProjectDetails() {
 
         {/* Cost breakdown once completed */}
         {completed && (
-          <div className="bg-white rounded-3xl border shadow-sm p-6 space-y-4">
-            <h2 className="text-xl font-semibold text-slate-800">Cost breakdown</h2>
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-5 sm:p-6 space-y-4">
+            <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-100">Cost breakdown</h2>
             <div className="overflow-x-auto">
-              <table className="w-full min-w-120 text-sm">
+              <table className="w-full min-w-[480px] text-sm text-slate-700 dark:text-slate-300">
                 <thead>
-                  <tr className="bg-slate-100">
+                  <tr className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
                     <th className="p-3 text-left">Member</th>
                     <th className="p-3 text-center">Hours</th>
                     <th className="p-3 text-center">Salary rate</th>
@@ -415,7 +420,7 @@ export default function ProjectDetails() {
                 <tbody>
                   {costRows(project.team)}
                   {project.support.length > 0 && (
-                    <tr className="border-t bg-slate-50">
+                    <tr className="border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60">
                       <td colSpan={4} className="p-3 font-medium">
                         Support after completion
                       </td>
@@ -423,7 +428,7 @@ export default function ProjectDetails() {
                   )}
                   {costRows(project.support)}
                   {(project.lead?.marketing?.length || 0) > 0 && (
-                    <tr className="border-t bg-slate-50">
+                    <tr className="border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60">
                       <td colSpan={4} className="p-3 font-medium">
                         Marketing time
                       </td>
@@ -435,18 +440,18 @@ export default function ProjectDetails() {
             </div>
 
             <div className="grid sm:grid-cols-2 gap-3 text-sm">
-              <div className="bg-slate-50 rounded-2xl p-4">
-                <p className="text-slate-500">Project value</p>
-                <p className="text-2xl font-bold">{money(project.projectValue)}</p>
+              <div className="bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-4">
+                <p className="text-slate-500 dark:text-slate-400">Project value</p>
+                <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">{money(project.projectValue)}</p>
               </div>
-              <div className="bg-slate-50 rounded-2xl p-4">
-                <p className="text-slate-500">
+              <div className="bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-4">
+                <p className="text-slate-500 dark:text-slate-400">
                   Team ({s.teamHours} hrs) + support ({s.supportHours} hrs) + marketing ({s.marketingHours} hrs)
                 </p>
-                <p className="text-2xl font-bold">{money(s.totalCost)}</p>
+                <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">{money(s.totalCost)}</p>
               </div>
-              <div className="bg-slate-50 rounded-2xl p-4 sm:col-span-2">
-                <p className="text-slate-500">Value after team cost</p>
+              <div className="bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-4 sm:col-span-2">
+                <p className="text-slate-500 dark:text-slate-400">Value after team cost</p>
                 <p className={`text-2xl font-bold ${s.profit < 0 ? "text-red-600" : "text-green-600"}`}>
                   {money(s.profit)}
                 </p>

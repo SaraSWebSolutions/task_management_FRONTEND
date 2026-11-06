@@ -14,13 +14,19 @@ const EMPTY = {
   company: "",
   email: "",
   phone: "",
+  whatsapp: "",
   source: "",
   value: "",
   priority: "MEDIUM",
   requestType: "",
   demoType: "",
+  assignedTo: "",
+  location: "",
+  demoNotes: "",
   notes: "",
 };
+
+const hasDemo = (type) => type === "DEMO" || type === "BOTH";
 
 function Select({ value, onChange, children }) {
   return (
@@ -36,27 +42,21 @@ function Select({ value, onChange, children }) {
   );
 }
 
-function Choice({ label, selected, onClick }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`flex-1 rounded-xl border px-4 py-2.5 text-sm font-semibold transition ${
-        selected
-          ? "border-brand bg-brand text-white"
-          : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-      }`}
-    >
-      {label}
-    </button>
-  );
-}
-
 export default function LeadDrawer({ leadId, onClose, onSaved }) {
   const editing = Boolean(leadId);
   const [form, setForm] = useState(EMPTY);
   const [loading, setLoading] = useState(editing);
   const [saving, setSaving] = useState(false);
+  const [users, setUsers] = useState([]);
+  const [sameWhatsapp, setSameWhatsapp] = useState(false);
+
+  // People who can be given the demo
+  useEffect(() => {
+    api
+      .get("/leads/assignees")
+      .then((res) => setUsers(res.data.users || []))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!editing) return;
@@ -72,13 +72,18 @@ export default function LeadDrawer({ leadId, onClose, onSaved }) {
           company: l.company || "",
           email: l.email || "",
           phone: l.phone || "",
+          whatsapp: l.whatsapp || "",
           source: l.source || "OTHER",
           value: l.value || "",
           priority: l.priority || "MEDIUM",
           requestType: l.requestType || "",
           demoType: l.demoType || "",
+          assignedTo: l.assignedTo?._id || l.assignedTo || "",
+          location: l.location || "",
+          demoNotes: l.demoNotes || "",
           notes: l.notes || "",
         });
+        setSameWhatsapp(Boolean(l.phone) && l.phone === l.whatsapp);
       })
       .catch(() => {
         if (cancelled) return;
@@ -97,18 +102,54 @@ export default function LeadDrawer({ leadId, onClose, onSaved }) {
 
   const set = (field) => (e) => setForm((p) => ({ ...p, [field]: e.target.value }));
 
+  const setPhone = (e) => {
+    const phone = e.target.value;
+    setForm((p) => ({ ...p, phone, ...(sameWhatsapp && { whatsapp: phone }) }));
+  };
+
+  const toggleSame = (e) => {
+    const on = e.target.checked;
+    setSameWhatsapp(on);
+    if (on) setForm((p) => ({ ...p, whatsapp: p.phone }));
+  };
+
+  const pickRequest = (e) => {
+    const requestType = e.target.value;
+    setForm((p) =>
+      hasDemo(requestType)
+        ? { ...p, requestType }
+        : { ...p, requestType, demoType: "", assignedTo: "", location: "", demoNotes: "" },
+    );
+  };
+
+  const pickDemoType = (e) => {
+    const demoType = e.target.value;
+    setForm((p) => ({ ...p, demoType, ...(demoType !== "OFFLINE" && { location: "" }) }));
+  };
+
   const save = async () => {
     if (!form.name.trim()) return toast.error("Name is required");
     if (!form.email.trim()) return toast.error("Email is required");
+    if (!form.phone.trim()) return toast.error("Phone number is required");
+    if (!form.whatsapp.trim()) return toast.error("WhatsApp number is required");
     if (!form.source) return toast.error("Select lead source");
     if (!form.requestType) return toast.error("Select what the lead is asking for");
-    if (form.requestType === "DEMO" && !form.demoType) {
-      return toast.error("Select demo type (Online / Offline)");
+
+    if (hasDemo(form.requestType)) {
+      if (!form.demoType) return toast.error("Select demo type (Online / Offline)");
+      if (!form.assignedTo) return toast.error("Select who will give the demo");
+      if (form.demoType === "OFFLINE" && !form.location.trim()) {
+        return toast.error("Location is required for an offline demo");
+      }
     }
 
+    const demo = hasDemo(form.requestType);
     const payload = {
       ...form,
-      demoType: form.requestType === "DEMO" ? form.demoType : undefined,
+      demoType: demo ? form.demoType : undefined,
+      assignedTo: demo ? form.assignedTo : undefined,
+      location: demo && form.demoType === "OFFLINE" ? form.location.trim() : undefined,
+      demoNotes: demo ? form.demoNotes : undefined,
     };
 
     try {
@@ -163,9 +204,24 @@ export default function LeadDrawer({ leadId, onClose, onSaved }) {
           <Field label="Email" required>
             <input type="email" value={form.email} onChange={set("email")} placeholder="lead@company.com" className={ic} />
           </Field>
-          <Field label="Phone">
-            <input value={form.phone} onChange={set("phone")} placeholder="Phone number" className={ic} />
+          <Field label="Phone Number" required>
+            <input value={form.phone} onChange={setPhone} placeholder="Phone number" className={ic} />
           </Field>
+          <div>
+            <Field label="WhatsApp Number" required>
+              <input
+                value={form.whatsapp}
+                onChange={set("whatsapp")}
+                disabled={sameWhatsapp}
+                placeholder="WhatsApp number"
+                className={ic}
+              />
+            </Field>
+            <label className="mt-2 flex items-center gap-2 text-sm text-slate-600">
+              <input type="checkbox" checked={sameWhatsapp} onChange={toggleSame} />
+              Same as phone number
+            </label>
+          </div>
 
           <Field label="Lead Source" required>
             <Select value={form.source} onChange={set("source")}>
@@ -188,37 +244,66 @@ export default function LeadDrawer({ leadId, onClose, onSaved }) {
           <span className="hidden sm:block" />
 
           <div className="sm:col-span-2">
-            <span className="block text-sm font-semibold text-slate-800 mb-2">Lead is asking for *</span>
-            <div className="flex gap-3">
-              <Choice
-                label="Demo"
-                selected={form.requestType === "DEMO"}
-                onClick={() => setForm((p) => ({ ...p, requestType: "DEMO" }))}
-              />
-              <Choice
-                label="Quotation"
-                selected={form.requestType === "QUOTATION"}
-                onClick={() => setForm((p) => ({ ...p, requestType: "QUOTATION", demoType: "" }))}
-              />
-            </div>
+            <Field label="Lead is asking for" required>
+              <Select value={form.requestType} onChange={pickRequest}>
+                <option value="">Select</option>
+                <option value="DEMO">Demo</option>
+                <option value="QUOTATION">Quotation</option>
+                <option value="BOTH">Both (Demo + Quotation)</option>
+              </Select>
+            </Field>
           </div>
 
-          {form.requestType === "DEMO" && (
-            <div className="sm:col-span-2">
-              <span className="block text-sm font-semibold text-slate-800 mb-2">Demo type *</span>
-              <div className="flex gap-3">
-                <Choice
-                  label="Online"
-                  selected={form.demoType === "ONLINE"}
-                  onClick={() => setForm((p) => ({ ...p, demoType: "ONLINE" }))}
-                />
-                <Choice
-                  label="Offline"
-                  selected={form.demoType === "OFFLINE"}
-                  onClick={() => setForm((p) => ({ ...p, demoType: "OFFLINE" }))}
-                />
-              </div>
-            </div>
+          {hasDemo(form.requestType) && (
+            <>
+              <Field label="Demo Type" required>
+                <Select value={form.demoType} onChange={pickDemoType}>
+                  <option value="">Select demo type</option>
+                  <option value="ONLINE">Online</option>
+                  <option value="OFFLINE">Offline</option>
+                </Select>
+              </Field>
+
+              {form.demoType && (
+                <Field label="Assign Demo To" required>
+                  <Select value={form.assignedTo} onChange={set("assignedTo")}>
+                    <option value="">Select person</option>
+                    {users.map((u) => (
+                      <option key={u._id} value={u._id}>
+                        {u.name} {u.designation ? `(${u.designation})` : ""}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+              )}
+
+              {form.demoType === "OFFLINE" && (
+                <div className="sm:col-span-2">
+                  <Field label="Demo Location" required>
+                    <input
+                      value={form.location}
+                      onChange={set("location")}
+                      placeholder="Where is the demo?"
+                      className={ic}
+                    />
+                  </Field>
+                </div>
+              )}
+
+              {form.demoType && (
+                <div className="sm:col-span-2">
+                  <Field label="Demo Notes">
+                    <textarea
+                      rows={3}
+                      value={form.demoNotes}
+                      onChange={set("demoNotes")}
+                      placeholder="Anything the person giving the demo should know..."
+                      className={ic}
+                    />
+                  </Field>
+                </div>
+              )}
+            </>
           )}
 
           <div className="sm:col-span-2">

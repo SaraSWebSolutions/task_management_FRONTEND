@@ -5,13 +5,13 @@ import {
   User,
   Mail,
   FolderKanban,
-  UserCog,
   Target,
   ChevronDown,
   Briefcase,
-  Wallet,
+  Package,
   ChartColumn,
-  CalendarDays,
+  Settings,
+  ReceiptText,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import logo from "../assets/logo.png";
@@ -19,20 +19,21 @@ import favlogo from "../assets/favicon.png";
 import { canAccess } from "../utils/permissions";
 
 // Every item is gated by a permission; Admin passes all of them.
-const USER_GROUP = {
-  key: "users",
-  text: "User Management",
-  icon: UserCog,
+const SETTINGS_GROUP = {
+  key: "settings",
+  text: "Settings",
+  icon: Settings,
   children: [
     {
       to: "/users",
-      text: "All Users",
+      text: "Users",
       perm: "users.view",
       match: (p) =>
         p === "/users" || (p.startsWith("/users/") && p !== "/users/add"),
     },
-    { to: "/users/add", text: "Add User", perm: "users.create" },
     { to: "/roles", text: "Roles & Permissions", perm: "roles.view" },
+    { to: "/finance/plans", text: "Plans & Pricing", perm: "plans.view" },
+    { to: "/finance/tax", text: "Tax Settings", perm: "tax.view" },
   ],
 };
 
@@ -52,7 +53,6 @@ const CRM_GROUP = {
         p.startsWith("/edit-lead/"),
     },
     { to: "/crm/pipeline", text: "Lead Pipeline", perm: "leads.view" },
-    { to: "/quotations", text: "Quotations", perm: "leads.view", match: (p) => p.startsWith("/quotations") },
     {
       to: "/crm/customers",
       text: "Customers",
@@ -62,9 +62,24 @@ const CRM_GROUP = {
         p === "/add-customer" ||
         p.startsWith("/edit-customer/"),
     },
-    { to: "/crm/deals", text: "Deals", perm: "deals.view" },
-    { to: "/crm/tasks", text: "Tasks", perm: "crmtasks.view" },
     { to: "/crm/follow-ups", text: "Follow-ups", perm: "followups.view" },
+  ],
+};
+
+const PRODUCT_GROUP = {
+  key: "catalog",
+  text: "Products",
+  icon: Package,
+  children: [
+    {
+      to: "/products",
+      text: "Products",
+      perm: "products.view",
+      match: (p) =>
+        (p === "/products" || (p.startsWith("/products/") && p !== "/products/add")) &&
+        !p.endsWith("/edit"),
+    },
+    { to: "/categories", text: "Categories", perm: "categories.view" },
   ],
 };
 
@@ -81,28 +96,24 @@ const PROJECT_GROUP = {
     },
     { to: "/pm/board", text: "Task Board", perm: "projecttasks.view" },
     { to: "/pm/tasks", text: "Task List", perm: "projecttasks.view" },
-    { to: "/pm/milestones", text: "Milestones", perm: "milestones.view" },
+    // Milestones are hidden for now. Add this line back to show them again:
+    // { to: "/pm/milestones", text: "Milestones", perm: "milestones.view" },
     { to: "/pm/time", text: "Time Tracking", perm: "timelogs.view" },
   ],
 };
 
-const FINANCE_GROUP = {
-  key: "finance",
-  text: "Finance",
-  icon: Wallet,
+const SALES_GROUP = {
+  key: "sales",
+  text: "Sales",
+  icon: ReceiptText,
   children: [
-    { to: "/finance/revenue", text: "Revenue", perm: "finance.view" },
-    { to: "/finance/expenses", text: "Expenses", perm: "expenses.view" },
+    { to: "/quotations", text: "Quotations", perm: "leads.view", match: (p) => p.startsWith("/quotations") },
     { to: "/finance/invoices", text: "Invoices", perm: "invoices.view" },
     { to: "/finance/payments", text: "Payments", perm: "payments.view" },
-    {
-      to: "/finance/subscriptions",
-      text: "Subscriptions",
-      perm: "subscriptions.view",
-    },
-    { to: "/finance/plans", text: "Plans & Pricing", perm: "plans.view" },
-    { to: "/finance/tax", text: "Tax Settings", perm: "tax.view" },
-    { to: "/finance/reports", text: "Reports", perm: "finance.view" },
+    { to: "/finance/subscriptions", text: "Subscriptions", perm: "subscriptions.view" },
+    { to: "/finance/revenue", text: "Revenue", perm: "finance.view" },
+    { to: "/finance/expenses", text: "Expenses", perm: "expenses.view" },
+    { to: "/finance/reports", text: "Finance Reports", perm: "finance.view" },
   ],
 };
 
@@ -168,52 +179,23 @@ const DASHBOARD_LINK = {
   perm: "dashboard.view",
 };
 
-// Sidebar layout: section label -> items. A group opens into its children.
+// Sidebar layout, in this order. A group opens into its children.
 const SECTIONS = [
   {
-    label: "Main",
+    label: "Menu",
     items: [
       DASHBOARD_LINK,
-      {
-        to: "/my-work",
-        text: "My Work",
-        icon: ClipboardList,
-        perm: "mywork.view",
-        staffOnly: true,
-      },
-      {
-        to: "/calendar",
-        text: "Calendar",
-        icon: CalendarDays,
-        perm: "calendar.view",
-      },
-    ],
-  },
-  {
-    label: "Apps & Modules",
-    items: [
-      { group: USER_GROUP },
+      // staff only: employees do their tasks from here
+      { to: "/my-work", text: "My Work", icon: ClipboardList, perm: "mywork.view", staffOnly: true },
+      { to: "/campaigns", text: "Campaigns", icon: Mail, perm: "campaigns.view" },
+      { group: PRODUCT_GROUP },
       { group: CRM_GROUP },
+      { group: SALES_GROUP },
       { group: PROJECT_GROUP },
-      {
-        to: "/campaigns",
-        text: "Campaigns",
-        icon: Mail,
-        perm: "campaigns.view",
-      },
-    ],
-  },
-  {
-    label: "Finance & Reports",
-    items: [
-      { group: FINANCE_GROUP },
       { group: ANALYTICS_GROUP },
-      {
-        to: "/target-dashboard",
-        text: "Target Dashboard",
-        icon: Target,
-        perm: "reports.view",
-      },
+      { to: "/target-dashboard", text: "Target Dashboard", icon: Target, perm: "reports.view" },
+      { to: "/profile", text: "Profile", icon: User },
+      { group: SETTINGS_GROUP },
     ],
   },
 ];
@@ -366,7 +348,7 @@ export default function Sidebar({
           ${mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
         `}
       >
-        <div className="border-b bg-white px-4 py-5">
+        <div className="relative z-10 bg-white px-4 py-5 shadow-[0_3px_10px_-3px_rgba(15,23,42,0.18)] dark:shadow-[0_3px_12px_-3px_rgba(0,0,0,0.45)]">
           <div className="flex justify-center items-center relative h-16">
             {/* Main Logo */}
             <img
@@ -393,7 +375,7 @@ export default function Sidebar({
         </div>
 
         {/* Scrollable Menu */}
-        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-3 py-4">
+        <div className="flex-1 min-h-0 overflow-y-auto sidebar-scroll overflow-x-hidden px-3 py-4">
           {sections.map((s, i) => (
             <div key={s.label} className="mb-2">
               {i > 0 && <div className="mx-4 mb-3 border-t border-slate-100" />}
@@ -402,10 +384,6 @@ export default function Sidebar({
               )}
             </div>
           ))}
-
-          <div className="mt-2">
-            {renderLink({ to: "/profile", text: "Profile", icon: User })}
-          </div>
         </div>
       </aside>
     </>
